@@ -57,12 +57,14 @@ Future<void> main() async {
     request.response
       ..statusCode = HttpStatus.ok
       ..headers.contentType = ContentType.json
-      ..write(jsonEncode({
-        'ok': true,
-        'userId': user?['id'],
-        'firstName': user?['first_name'],
-        'authenticatedAt': parsed.authDate?.toIso8601String(),
-      }),);
+      ..write(
+        jsonEncode({
+          'ok': true,
+          'userId': user?['id'],
+          'firstName': user?['first_name'],
+          'authenticatedAt': parsed.authDate?.toIso8601String(),
+        }),
+      );
     await request.response.close();
   }
 }

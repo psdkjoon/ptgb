@@ -65,10 +65,17 @@ Future<void> main() async {
     final text = update.text;
     final chatId = update.chatId;
     if (text == '/counter' && chatId != null) {
-      final sent = await bot.sendMessage(chatId, 'Count: 0', replyMarkup: _counterKeyboard());
+      final sent = await bot.sendMessage(
+        chatId,
+        'Count: 0',
+        replyMarkup: _counterKeyboard(),
+      );
       _counters['$chatId:${sent['message_id']}'] = 0;
     } else if (text != null && chatId != null) {
-      await bot.sendMessage(chatId, 'Send /counter to try a live-editing message.');
+      await bot.sendMessage(
+        chatId,
+        'Send /counter to try a live-editing message.',
+      );
     }
   }
 }

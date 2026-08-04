@@ -56,7 +56,9 @@ Future<void> main() async {
     ownerUserId,
     setName,
     'My Demo Sticker Set',
-    [InputSticker(InputFile.id(fileId), StickerFormat.static, ['😀'])],
+    [
+      InputSticker(InputFile.id(fileId), StickerFormat.static, ['😀']),
+    ],
   );
   log('Created sticker set: $setName');
 
@@ -73,7 +75,8 @@ Future<void> main() async {
   // The set can now be sent like any other sticker set. `getStickerSet`
   // returns its stickers (each with its own file_id) if you need them.
   final set = await bot.getStickerSet(setName);
-  final firstStickerFileId = (set['stickers'] as List).first['file_id'] as String;
+  final firstStickerFileId =
+      (set['stickers'] as List).first['file_id'] as String;
 
   await for (final update in bot.poll()) {
     final chatId = update.chatId;

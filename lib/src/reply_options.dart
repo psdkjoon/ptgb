@@ -29,7 +29,8 @@ class LinkPreviewOptions {
   });
 
   /// Shortcut that disables the link preview entirely.
-  factory LinkPreviewOptions.disabled() => const LinkPreviewOptions(isDisabled: true);
+  factory LinkPreviewOptions.disabled() =>
+      const LinkPreviewOptions(isDisabled: true);
 
   /// Converts these options to the JSON shape Telegram's API expects.
   Json toJson() => {

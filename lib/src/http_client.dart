@@ -14,23 +14,51 @@ class TelegramHttpClient {
 
   /// Base URL files are downloaded from, e.g. `https://api.telegram.org/file/bot<token>`.
   final String fileBaseUrl;
-  final HttpClient _client = HttpClient();
 
-  /// Creates a client pointed at [apiBaseUrl] and [fileBaseUrl].
-  TelegramHttpClient(this.apiBaseUrl, this.fileBaseUrl);
+  /// How long to wait for a request to complete before giving up with a
+  /// [TimeoutException]. Applied on top of Telegram's own long-polling
+  /// `timeout` parameter (see [Bot.getUpdates]), so this should generally
+  /// be set comfortably higher than the longest `timeout` you pass to
+  /// [Bot.poll] — the default (35s) already leaves 5s of headroom over
+  /// [Bot.poll]'s default 30s long-poll timeout.
+  final Duration requestTimeout;
+
+  final HttpClient _client;
+
+  /// Creates a client pointed at [apiBaseUrl] and [fileBaseUrl]. Every
+  /// request (including long-polling calls to `getUpdates`) is aborted
+  /// with a [TimeoutException] after [requestTimeout] if Telegram hasn't
+  /// responded by then.
+  TelegramHttpClient(
+    this.apiBaseUrl,
+    this.fileBaseUrl, {
+    this.requestTimeout = const Duration(seconds: 35),
+  }) : _client = HttpClient()..connectionTimeout = requestTimeout;
 
   /// Calls [method] with [params] and optional multipart [files], returning
-  /// the raw `result` field on success or throwing [TelegramApiException] on failure.
-  Future<dynamic> call(String method, [Json? params, Map<String, InputFile>? files]) async {
+  /// the raw `result` field on success or throwing [TelegramApiException] on
+  /// failure. Throws [TelegramApiException] (rather than a raw
+  /// [FormatException]) if Telegram's response isn't valid JSON — this can
+  /// happen when an intermediary (proxy, load balancer, ...) returns an
+  /// HTML error page instead of the API responding, e.g. during a 502/503.
+  Future<dynamic> call(
+    String method, [
+    Json? params,
+    Map<String, InputFile>? files,
+  ]) async {
     final uri = Uri.parse('$apiBaseUrl/$method');
     final hasUpload = files != null && files.values.any((f) => f.isUpload);
 
-    final HttpClientRequest request = await _client.postUrl(uri);
+    final HttpClientRequest request =
+        await _client.postUrl(uri).timeout(requestTimeout);
     late final List<int> body;
 
     if (hasUpload) {
       final boundary = '----ptgb${DateTime.now().microsecondsSinceEpoch}';
-      request.headers.set(HttpHeaders.contentTypeHeader, 'multipart/form-data; boundary=$boundary');
+      request.headers.set(
+        HttpHeaders.contentTypeHeader,
+        'multipart/form-data; boundary=$boundary',
+      );
       body = await _buildMultipartBody(boundary, params, files);
     } else {
       request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
@@ -45,9 +73,20 @@ class TelegramHttpClient {
     request.contentLength = body.length;
     request.add(body);
 
-    final response = await request.close();
-    final responseBody = await response.transform(utf8.decoder).join();
-    final decoded = jsonDecode(responseBody) as Json;
+    final response = await request.close().timeout(requestTimeout);
+    final responseBody =
+        await response.transform(utf8.decoder).join().timeout(requestTimeout);
+
+    final Json decoded;
+    try {
+      decoded = jsonDecode(responseBody) as Json;
+    } on FormatException catch (e) {
+      throw TelegramApiException(
+        response.statusCode,
+        'Telegram API returned a non-JSON response (HTTP ${response.statusCode}): ${e.message}',
+        null,
+      );
+    }
 
     if (decoded['ok'] == true) return decoded['result'];
 
@@ -61,10 +100,10 @@ class TelegramHttpClient {
   /// Downloads the raw bytes of [filePath] (as returned by `getFile`).
   Future<Uint8List> downloadFile(String filePath) async {
     final uri = Uri.parse('$fileBaseUrl/$filePath');
-    final request = await _client.getUrl(uri);
-    final response = await request.close();
+    final request = await _client.getUrl(uri).timeout(requestTimeout);
+    final response = await request.close().timeout(requestTimeout);
     final builder = BytesBuilder();
-    await for (final chunk in response) {
+    await for (final chunk in response.timeout(requestTimeout)) {
       builder.add(chunk);
     }
     return builder.takeBytes();
@@ -79,7 +118,9 @@ class TelegramHttpClient {
 
     void writeField(String name, String value) {
       builder.add(utf8.encode('--$boundary\r\n'));
-      builder.add(utf8.encode('Content-Disposition: form-data; name="$name"\r\n\r\n'));
+      builder.add(
+        utf8.encode('Content-Disposition: form-data; name="$name"\r\n\r\n'),
+      );
       builder.add(utf8.encode(value));
       builder.add(utf8.encode('\r\n'));
     }
@@ -94,9 +135,13 @@ class TelegramHttpClient {
       if (file.isUpload) {
         final data = await file.readBytes();
         builder.add(utf8.encode('--$boundary\r\n'));
-        builder.add(utf8.encode(
-            'Content-Disposition: form-data; name="${entry.key}"; filename="${file.filename}"\r\n',),);
-        builder.add(utf8.encode('Content-Type: application/octet-stream\r\n\r\n'));
+        builder.add(
+          utf8.encode(
+            'Content-Disposition: form-data; name="${entry.key}"; filename="${file.filename}"\r\n',
+          ),
+        );
+        builder
+            .add(utf8.encode('Content-Type: application/octet-stream\r\n\r\n'));
         builder.add(data);
         builder.add(utf8.encode('\r\n'));
       } else if (file.remoteValue != null) {

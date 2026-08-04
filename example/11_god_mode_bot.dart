@@ -50,7 +50,8 @@ Future<void> main() async {
     {'command': 'buy', 'description': 'Buy something with Telegram Stars'},
   ]);
   await bot.setMyDescription(
-    description: 'A ptgb demo bot showcasing keyboards, media, polls, payments, and more.',
+    description:
+        'A ptgb demo bot showcasing keyboards, media, polls, payments, and more.',
   );
 
   log('God-mode bot running. Press Ctrl+C to stop.');
@@ -73,7 +74,10 @@ Future<void> main() async {
       } else if (update.inlineQuery != null) {
         await _handleInlineQuery(bot, update);
       } else if (update.preCheckoutQuery != null) {
-        await bot.answerPreCheckoutQuery(update.preCheckoutQuery!['id'] as String, true);
+        await bot.answerPreCheckoutQuery(
+          update.preCheckoutQuery!['id'] as String,
+          true,
+        );
       } else if (update.message?['successful_payment'] != null) {
         await bot.sendMessage(update.chatId!, '✅ Payment received, thank you!');
       } else if (update.text != null) {
@@ -112,16 +116,27 @@ Future<void> _handleCommand(Bot bot, Update update) async {
       );
 
     case '/counter':
-      final sent = await bot.sendMessage(chatId, 'Count: 0', replyMarkup: _counterKeyboard());
+      final sent = await bot.sendMessage(
+        chatId,
+        'Count: 0',
+        replyMarkup: _counterKeyboard(),
+      );
       _counters['$chatId:${sent['message_id']}'] = 0;
 
     case '/photo':
       // Show a "sending photo..." indicator while we prepare the album.
       await bot.sendChatAction(chatId, ChatAction.uploadPhoto);
-      await bot.sendPhoto(chatId, InputFile.url('https://picsum.photos/800/600'), caption: 'A single photo.');
+      await bot.sendPhoto(
+        chatId,
+        InputFile.url('https://picsum.photos/800/600'),
+        caption: 'A single photo.',
+      );
       await bot.sendMediaGroup(chatId, [
         InputMediaPhoto(InputFile.url('https://picsum.photos/seed/a/600')),
-        InputMediaPhoto(InputFile.url('https://picsum.photos/seed/b/600'), caption: 'Album item 2'),
+        InputMediaPhoto(
+          InputFile.url('https://picsum.photos/seed/b/600'),
+          caption: 'Album item 2',
+        ),
       ]);
 
     case '/location':
@@ -158,7 +173,10 @@ Future<void> _handleCommand(Bot bot, Update update) async {
       );
 
     default:
-      await bot.sendMessage(chatId, 'Unknown command — try /menu to see what I can do.');
+      await bot.sendMessage(
+        chatId,
+        'Unknown command — try /menu to see what I can do.',
+      );
   }
 }
 
@@ -188,7 +206,10 @@ Future<void> _handleCallback(Bot bot, Update update) async {
       ...callback['message'] as Map<String, dynamic>,
       'text': '/${data.substring(5)}',
     };
-    await _handleCommand(bot, Update({'update_id': update.updateId, 'message': syntheticMessage}));
+    await _handleCommand(
+      bot,
+      Update({'update_id': update.updateId, 'message': syntheticMessage}),
+    );
     return;
   }
 
@@ -224,7 +245,10 @@ Future<void> _handleInlineQuery(Bot bot, Update update) async {
       'type': 'article',
       'id': '1',
       'title': 'Send: "$searchText"',
-      'input_message_content': {'message_text': searchText.isEmpty ? 'Hello from god mode!' : searchText},
+      'input_message_content': {
+        'message_text':
+            searchText.isEmpty ? 'Hello from god mode!' : searchText,
+      },
     },
   ]);
 }

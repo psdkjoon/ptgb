@@ -79,6 +79,7 @@ class InlineKeyboardButton {
   factory InlineKeyboardButton.pay(String text) =>
       InlineKeyboardButton(text: text, pay: true);
 
+  /// Converts this button to the JSON shape Telegram's API expects.
   Json toJson() => {
         'text': text,
         if (url != null) 'url': url,
@@ -120,7 +121,8 @@ class InlineKeyboardMarkup implements ReplyMarkup {
 
   @override
   Json toJson() => {
-        'inline_keyboard': rows.map((r) => r.map((b) => b.toJson()).toList()).toList(),
+        'inline_keyboard':
+            rows.map((r) => r.map((b) => b.toJson()).toList()).toList(),
       };
 }
 
@@ -161,6 +163,7 @@ class KeyboardButton {
     this.webAppUrl,
   });
 
+  /// Converts this button to the JSON shape Telegram's API expects.
   Json toJson() => {
         'text': text,
         if (requestContact != null) 'request_contact': requestContact,
@@ -207,11 +210,13 @@ class ReplyKeyboardMarkup implements ReplyMarkup {
 
   @override
   Json toJson() => {
-        'keyboard': keyboard.map((r) => r.map((b) => b.toJson()).toList()).toList(),
+        'keyboard':
+            keyboard.map((r) => r.map((b) => b.toJson()).toList()).toList(),
         if (isPersistent != null) 'is_persistent': isPersistent,
         if (resizeKeyboard != null) 'resize_keyboard': resizeKeyboard,
         if (oneTimeKeyboard != null) 'one_time_keyboard': oneTimeKeyboard,
-        if (inputFieldPlaceholder != null) 'input_field_placeholder': inputFieldPlaceholder,
+        if (inputFieldPlaceholder != null)
+          'input_field_placeholder': inputFieldPlaceholder,
         if (selective != null) 'selective': selective,
       };
 }
@@ -249,6 +254,7 @@ class ForceReply implements ReplyMarkup {
   Json toJson() => {
         'force_reply': true,
         if (selective) 'selective': true,
-        if (inputFieldPlaceholder != null) 'input_field_placeholder': inputFieldPlaceholder,
+        if (inputFieldPlaceholder != null)
+          'input_field_placeholder': inputFieldPlaceholder,
       };
 }

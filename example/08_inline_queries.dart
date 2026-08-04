@@ -39,14 +39,18 @@ Future<void> main() async {
         'type': 'article',
         'id': '1',
         'title': 'Echo: $searchText',
-        'input_message_content': {'message_text': 'You searched for: $searchText'},
+        'input_message_content': {
+          'message_text': 'You searched for: $searchText',
+        },
         'description': 'Sends the query text back as a message',
       },
       {
         'type': 'article',
         'id': '2',
         'title': 'Shout it',
-        'input_message_content': {'message_text': '${searchText.toUpperCase()}!!!'},
+        'input_message_content': {
+          'message_text': '${searchText.toUpperCase()}!!!',
+        },
         'description': 'Sends the query text, but louder',
       },
     ];

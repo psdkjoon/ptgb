@@ -48,8 +48,10 @@ class WebAppInitData {
   DateTime? get authDate {
     final raw = fields['auth_date'] as String?;
     return raw != null
-        ? DateTime.fromMillisecondsSinceEpoch(int.parse(raw) * 1000,
-            isUtc: true,)
+        ? DateTime.fromMillisecondsSinceEpoch(
+            int.parse(raw) * 1000,
+            isUtc: true,
+          )
         : null;
   }
 

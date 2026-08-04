@@ -40,9 +40,13 @@ Future<void> main() async {
 
     // Step 3: the payment succeeded — Telegram attaches this field to the
     // message that follows the invoice.
-    final successfulPayment = update.message?['successful_payment'] as Map<String, dynamic>?;
+    final successfulPayment =
+        update.message?['successful_payment'] as Map<String, dynamic>?;
     if (successfulPayment != null && chatId != null) {
-      await bot.sendMessage(chatId, 'Thank you for your purchase! 🎉 Here is your sticker pack.');
+      await bot.sendMessage(
+        chatId,
+        'Thank you for your purchase! 🎉 Here is your sticker pack.',
+      );
       continue;
     }
 
@@ -60,7 +64,10 @@ Future<void> main() async {
         ],
       );
     } else if (text != null && chatId != null) {
-      await bot.sendMessage(chatId, 'Send /buy to purchase a digital sticker pack for 50 ⭐.');
+      await bot.sendMessage(
+        chatId,
+        'Send /buy to purchase a digital sticker pack for 50 ⭐.',
+      );
     }
   }
 }

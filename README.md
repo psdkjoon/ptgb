@@ -39,8 +39,11 @@ Future<void> main() async {
 - **Two update sources** — long-polling out of the box (`Bot.poll`) or your
   own webhook server (`Bot.serveWebhook`).
 - **Typed helpers**, not raw JSON, for keyboards (`InlineKeyboardMarkup`,
-  `ReplyKeyboardMarkup`), media (`InputMedia*`), and permissions
-  (`ChatPermissions`, `ChatAdministratorRights`).
+  `ReplyKeyboardMarkup`), media (`InputMedia*`), permissions
+  (`ChatPermissions`, `ChatAdministratorRights`), and — optionally, if you
+  want it — incoming `User`/`Chat`/`Message` payloads.
+- **Optional rate limiting** — pass `Bot(rateLimiter: RateLimiter())` to
+  automatically pace outgoing requests instead of handling every 429 yourself.
 - **Telegram Mini App support** — verify a Web App's signed `initData` with
   `Bot.verifyWebAppInitData`.
 - **A low-level escape hatch** (`Bot.call`) for any Bot API method that
@@ -122,13 +125,24 @@ keyboards, media, payments, stickers, invite links, and webhooks. Start with
 - **`poll()` and `serveWebhook()` are mutually exclusive.** Telegram only
   delivers updates through one channel at a time — call `setWebhook` before
   using webhooks, and `deleteWebhook` before switching back to polling.
-- **ptgb does not retry or throttle requests for you.** Every failed call
-  throws a `TelegramApiException`; wrap your update handling in `try`/`catch`
-  so one bad call (blocked user, rate limit, invalid `chat_id`) doesn't crash
-  your whole process. See `example/15_error_handling_and_retries.dart`.
+- **ptgb does not retry or throttle requests for you by default.** Every
+  failed call throws a `TelegramApiException`; wrap your update handling in
+  `try`/`catch` so one bad call (blocked user, rate limit, invalid
+  `chat_id`) doesn't crash your whole process. See
+  `example/15_error_handling_and_retries.dart`. If you'd rather pace
+  requests proactively, pass `Bot(rateLimiter: RateLimiter())` — see
+  `example/17_rate_limiting.dart`.
 - **Inline query results are raw JSON `Map`s, not typed classes** — there
   are many result types (article, photo, gif, ...) with very different
   shapes, so this is intentional for now.
+- **Incoming `User`/`Chat`/`Message` payloads are raw JSON by default, with
+  optional typed wrappers available.** `Update`'s own getters (`.message`,
+  `.chat`, `.from`, ...) still return raw `Json` for zero-overhead access.
+  Wrap the result in `User`/`Chat`/`Message` (`Message(update.message!)`)
+  when you want typed getters instead — see
+  `example/18_typed_message_helpers.dart`. These are common class names, so
+  if another package you're using also exports a `User`, `Chat`, or
+  `Message`, import one of them with a prefix to disambiguate.
 - Requires Dart SDK `^3.5.0`.
 
 ## Contributing

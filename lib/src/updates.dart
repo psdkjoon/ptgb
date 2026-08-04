@@ -51,7 +51,14 @@ class Update {
   Json? get editedBusinessMessage => raw['edited_business_message'] as Json?;
 
   /// Messages were deleted in a connected Telegram Business account's chat.
-  Json? get deletedBusinessMessages => raw['deleted_business_messages'] as Json?;
+  Json? get deletedBusinessMessages =>
+      raw['deleted_business_messages'] as Json?;
+
+  /// A new message from a guest — an unauthenticated user browsing via
+  /// [Guest Mode](https://core.telegram.org/bots/features#guest-bots) —
+  /// received in a chat the bot is not a member of. Use its
+  /// `guest_query_id` field with [Bot.answerGuestQuery] to reply.
+  Json? get guestMessage => raw['guest_message'] as Json?;
 
   /// A user changed their reaction on a message (requires the bot to have subscribed to this update type).
   Json? get messageReaction => raw['message_reaction'] as Json?;
@@ -98,16 +105,21 @@ class Update {
   /// A boost was removed from a chat.
   Json? get removedChatBoost => raw['removed_chat_boost'] as Json?;
 
+  /// A user's Telegram Stars subscription to the bot's content was created, renewed, expired, or cancelled.
+  Json? get subscription => raw['subscription'] as Json?;
+
   /// The first non-null message-like payload on this update — checks
   /// [message], [editedMessage], [channelPost], [editedChannelPost],
-  /// [businessMessage], and [editedBusinessMessage] in that order.
+  /// [businessMessage], [editedBusinessMessage], and [guestMessage] in
+  /// that order.
   Json? get anyMessage =>
       message ??
       editedMessage ??
       channelPost ??
       editedChannelPost ??
       businessMessage ??
-      editedBusinessMessage;
+      editedBusinessMessage ??
+      guestMessage;
 
   /// The chat this update relates to, looked up across [anyMessage],
   /// [callbackQuery], [myChatMember], [chatMember], and [chatJoinRequest].
@@ -133,11 +145,61 @@ class Update {
       (chatMember?['from'] as Json?) ??
       (chatJoinRequest?['from'] as Json?);
 
+  /// Shortcut for `anyMessage?['message_id']` — the ID of the message this
+  /// update relates to, ready to pass to `messageId` parameters.
+  int? get messageId => anyMessage?['message_id'] as int?;
+
+  /// Shortcut for `from?['id']` — the ID of the user who triggered this
+  /// update, ready to pass to `userId` parameters.
+  int? get userId => from?['id'] as int?;
+
+  /// Shortcut for `from?['username']`, if the triggering user has one set.
+  String? get username => from?['username'] as String?;
+
+  /// Shortcut for `from?['first_name']` — the triggering user's first name.
+  String? get firstName => from?['first_name'] as String?;
+
+  /// Shortcut for `chat?['type']` — `'private'`, `'group'`, `'supergroup'`,
+  /// or `'channel'`.
+  String? get chatType => chat?['type'] as String?;
+
   /// Shortcut for the text of [anyMessage], if any.
   String? get text => anyMessage?['text'] as String?;
 
+  /// Shortcut for `anyMessage?['caption']` — the caption on a media
+  /// message, if any.
+  String? get caption => anyMessage?['caption'] as String?;
+
+  /// Shortcut for `anyMessage?['message_thread_id']` — the forum topic or
+  /// message thread this update belongs to, if any.
+  int? get messageThreadId => anyMessage?['message_thread_id'] as int?;
+
+  /// Shortcut for `anyMessage?['reply_to_message']` — the message this
+  /// update is a reply to, if any, as raw JSON.
+  Json? get replyToMessage => anyMessage?['reply_to_message'] as Json?;
+
+  /// Shortcut for `anyMessage?['entities']` (or `caption_entities` when
+  /// there's no plain-text `entities` field) — the special entities
+  /// (mentions, URLs, bot commands, ...) found in the message's text or
+  /// caption, if any.
+  List<Json>? get entities =>
+      (anyMessage?['entities'] as List?)?.cast<Json>() ??
+      (anyMessage?['caption_entities'] as List?)?.cast<Json>();
+
   /// Shortcut for the `data` payload of [callbackQuery], if any.
   String? get callbackData => callbackQuery?['data'] as String?;
+
+  /// Shortcut for `guestMessage?['guest_query_id']` — pass this straight
+  /// to [Bot.answerGuestQuery] to reply to the guest.
+  String? get guestQueryId => guestMessage?['guest_query_id'] as String?;
+
+  /// Shortcut for `chatJoinRequest?['query_id']` — present when this join
+  /// request was routed to the bot as a "guard bot" (see
+  /// `ChatFullInfo.guard_bot`) and must be resolved within 10 seconds via
+  /// [Bot.answerChatJoinRequestQuery] or [Bot.sendChatJoinRequestWebApp].
+  /// `null` for ordinary join requests handled with
+  /// `approveChatJoinRequest`/`declineChatJoinRequest`.
+  String? get chatJoinRequestQueryId => chatJoinRequest?['query_id'] as String?;
 }
 
 /// The set of update payload types a bot can subscribe to, used with
@@ -152,6 +214,7 @@ enum UpdateType {
   businessMessage,
   editedBusinessMessage,
   deletedBusinessMessages,
+  guestMessage,
   messageReaction,
   messageReactionCount,
   inlineQuery,
@@ -166,7 +229,8 @@ enum UpdateType {
   chatMember,
   chatJoinRequest,
   chatBoost,
-  removedChatBoost;
+  removedChatBoost,
+  subscription;
 
   /// The literal string Telegram's API expects for this update type.
   String get value => switch (this) {
@@ -178,6 +242,7 @@ enum UpdateType {
         UpdateType.businessMessage => 'business_message',
         UpdateType.editedBusinessMessage => 'edited_business_message',
         UpdateType.deletedBusinessMessages => 'deleted_business_messages',
+        UpdateType.guestMessage => 'guest_message',
         UpdateType.messageReaction => 'message_reaction',
         UpdateType.messageReactionCount => 'message_reaction_count',
         UpdateType.inlineQuery => 'inline_query',
@@ -193,5 +258,6 @@ enum UpdateType {
         UpdateType.chatJoinRequest => 'chat_join_request',
         UpdateType.chatBoost => 'chat_boost',
         UpdateType.removedChatBoost => 'removed_chat_boost',
+        UpdateType.subscription => 'subscription',
       };
 }

@@ -53,7 +53,8 @@ class InputProfilePhotoAnimated implements InputProfilePhoto {
     return {
       'type': 'animated',
       'animation': ref,
-      if (mainFrameTimestamp != null) 'main_frame_timestamp': mainFrameTimestamp,
+      if (mainFrameTimestamp != null)
+        'main_frame_timestamp': mainFrameTimestamp,
     };
   }
 }
@@ -121,7 +122,8 @@ class InputStoryContentVideo implements InputStoryContent {
       'type': 'video',
       'video': ref,
       if (duration != null) 'duration': duration,
-      if (coverFrameTimestamp != null) 'cover_frame_timestamp': coverFrameTimestamp,
+      if (coverFrameTimestamp != null)
+        'cover_frame_timestamp': coverFrameTimestamp,
       if (isAnimation != null) 'is_animation': isAnimation,
     };
   }

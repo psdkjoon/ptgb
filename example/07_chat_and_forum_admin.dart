@@ -27,7 +27,8 @@ Future<void> main() async {
 
     // Commands below expect a reply to the target user's message, e.g.
     // reply to someone's message with "/mute" to mute them.
-    final repliedTo = update.message?['reply_to_message'] as Map<String, dynamic>?;
+    final repliedTo =
+        update.message?['reply_to_message'] as Map<String, dynamic>?;
     final targetUserId = (repliedTo?['from'] as Map?)?['id'] as int?;
 
     if (text == '/mute' && targetUserId != null) {
@@ -36,7 +37,10 @@ Future<void> main() async {
         chatId,
         targetUserId,
         const ChatPermissions(canSendMessages: false),
-        untilDate: DateTime.now().add(const Duration(minutes: 10)).millisecondsSinceEpoch ~/ 1000,
+        untilDate: DateTime.now()
+                .add(const Duration(minutes: 10))
+                .millisecondsSinceEpoch ~/
+            1000,
       );
       await bot.sendMessage(chatId, 'Muted for 10 minutes.');
     } else if (text == '/unmute' && targetUserId != null) {
@@ -44,7 +48,11 @@ Future<void> main() async {
       await bot.restrictChatMember(
         chatId,
         targetUserId,
-        const ChatPermissions(canSendMessages: true, canSendPhotos: true, canSendOtherMessages: true),
+        const ChatPermissions(
+          canSendMessages: true,
+          canSendPhotos: true,
+          canSendOtherMessages: true,
+        ),
       );
       await bot.sendMessage(chatId, 'Unmuted.');
     } else if (text == '/pin') {
@@ -56,7 +64,11 @@ Future<void> main() async {
     } else if (text == '/new_topic') {
       // Forum topics only work in supergroups with the "Topics" feature
       // enabled. This creates a new one with an orange icon.
-      final topic = await bot.createForumTopic(chatId, 'General Discussion', iconColor: 0xFF9500);
+      final topic = await bot.createForumTopic(
+        chatId,
+        'General Discussion',
+        iconColor: 0xFF9500,
+      );
       await bot.sendMessage(
         chatId,
         'Created topic "${topic['name']}" (id: ${topic['message_thread_id']}).',

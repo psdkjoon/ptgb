@@ -47,6 +47,30 @@ the token from `.env` instead, which is the approach to actually use.
 | `14_sticker_sets.dart` | The multi-step flow for creating and adding to a sticker set. |
 | `15_error_handling_and_retries.dart` | Handling `TelegramApiException`: rate limits (429), blocked chats (403), and retry/backoff. |
 | `16_custom_env_config.dart` | Overriding the `.env` filename and key via `dotFileName`/`envKey`. |
+| `17_rate_limiting.dart` | Automatically pacing outgoing requests with the optional `RateLimiter`. |
+| `18_typed_message_helpers.dart` | Typed `User`/`Chat`/`Message` getters as an alternative to raw JSON. |
+| `19_update_shortcuts_and_any_message.dart` | `Update`'s direct-access shortcuts (`userId`, `messageId`, `username`, ...) and the `anyMessage` raw-JSON fallback for photos, locations, documents, and contacts. |
+| `20_new_bot_api_concepts.dart` | The newest Bot API concepts: checklists, rich messages, suggested posts, ephemeral messages, guest queries, and guard-bot join requests. |
+| `21_reply_parameters_and_quoting.dart` | `ReplyParameters` in depth: plain replies, quoting a specific excerpt, and `allowSendingWithoutReply`. |
+| `22_link_preview_options.dart` | Disabling, redirecting, and resizing a text message's link preview with `LinkPreviewOptions`. |
+| `23_advanced_reactions.dart` | `ReactionType.emoji`/`.customEmoji`/`.paid`, multiple reactions at once, and clearing reactions. |
+| `24_forwarding_and_copying.dart` | `forwardMessage`/`forwardMessages` vs `copyMessage`/`copyMessages` — attribution vs. no attribution. |
+| `25_locations_and_venues.dart` | `sendLocation`, `sendVenue`, and updating/stopping a live location. |
+| `26_contacts_and_chat_actions.dart` | `sendContact` and the "typing..."/"sending photo..." status indicator via `sendChatAction`. |
+| `27_chat_permissions_and_promotion.dart` | `ChatPermissions`, `restrictChatMember`, `promoteChatMember`, and `setChatAdministratorCustomTitle`. |
+| `28_bot_profile_and_menu.dart` | `setMyName`/`setMyDescription`/`setMyShortDescription` and swapping the chat menu button for a Web App. |
+| `29_default_admin_rights.dart` | Pre-filling the admin rights checklist shown when someone adds your bot, via `setMyDefaultAdministratorRights`. |
+| `30_games_and_high_scores.dart` | `sendGame`, `setGameScore`, and `getGameHighScores` for Telegram Games. |
+| `31_profile_photos_and_downloads.dart` | Reading a user's `getUserProfilePhotos`, `downloadFileById`, and managing the bot's own avatar. |
+| `32_chat_boosts_and_verification.dart` | `getUserChatBoosts` and the official `verifyUser`/`verifyChat` badge methods. |
+| `33_gifts.dart` | Browsing the gift catalog and sending gifts / gifted Premium with `sendGift`/`giftPremiumSubscription`. |
+| `34_business_account_profile.dart` | Editing a connected Business Account's name, username, bio, photo, and gift settings. |
+| `35_business_stars_and_messages.dart` | A connected Business Account's Star balance/transfers and marking/deleting its messages. |
+| `36_stories.dart` | Posting, editing, and deleting Telegram Stories via a Business Connection. |
+| `37_prepared_messages.dart` | Pre-registering reusable inline results and keyboard buttons with `savePreparedInlineMessage`/`savePreparedKeyboardButton`. |
+| `38_subscription_invite_links.dart` | Paid recurring-membership invite links and canceling a user's Star subscription. |
+| `39_message_drafts.dart` | Pre-filling a chat's input field without sending, via `sendMessageDraft`/`sendRichMessageDraft`. |
+| `40_custom_emoji_and_sticker_details.dart` | Looking up sticker sets and custom emoji, and re-tagging an existing sticker's search metadata. |
 
 ## A note on error handling
 

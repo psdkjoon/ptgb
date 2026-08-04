@@ -57,7 +57,12 @@ Future<void> main() async {
             InlineKeyboardButton.callback('🔴 Red', 'color:red'),
             InlineKeyboardButton.callback('🔵 Blue', 'color:blue'),
           ],
-          [InlineKeyboardButton.url('📖 Telegram Bot API docs', 'https://core.telegram.org/bots/api')],
+          [
+            InlineKeyboardButton.url(
+              '📖 Telegram Bot API docs',
+              'https://core.telegram.org/bots/api',
+            ),
+          ],
         ]),
       );
     } else if (text == '/keyboard') {

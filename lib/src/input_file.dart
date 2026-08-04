@@ -21,19 +21,31 @@ class InputFile {
   final Uint8List? _bytes;
   final String? _filename;
 
-  const InputFile._(this._fileId, this._url, this._path, this._bytes, this._filename);
+  const InputFile._(
+    this._fileId,
+    this._url,
+    this._path,
+    this._bytes,
+    this._filename,
+  );
 
   /// Reuses a file already stored on Telegram's servers by its `file_id`.
   /// This is the fastest option since no bytes are re-uploaded.
-  factory InputFile.id(String fileId) => InputFile._(fileId, null, null, null, null);
+  factory InputFile.id(String fileId) =>
+      InputFile._(fileId, null, null, null, null);
 
   /// Points Telegram at a publicly accessible [url] to fetch the file from.
   factory InputFile.url(String url) => InputFile._(null, url, null, null, null);
 
   /// Uploads a local file from disk at [path]. [filename] defaults to the
   /// file's base name if not provided.
-  factory InputFile.path(String path, {String? filename}) =>
-      InputFile._(null, null, path, null, filename ?? path.split(Platform.pathSeparator).last);
+  factory InputFile.path(String path, {String? filename}) => InputFile._(
+        null,
+        null,
+        path,
+        null,
+        filename ?? path.split(Platform.pathSeparator).last,
+      );
 
   /// Uploads raw in-memory [bytes] under the given [filename], useful when
   /// you generated or downloaded the file content without writing it to disk.

@@ -37,7 +37,10 @@ Future<void> main() async {
 
   await for (final update in bot.poll()) {
     if (update.text == '/start') {
-      await bot.sendMessage(update.chatId!, 'Hello! I loaded my token from secrets.env.');
+      await bot.sendMessage(
+        update.chatId!,
+        'Hello! I loaded my token from secrets.env.',
+      );
     }
   }
 }

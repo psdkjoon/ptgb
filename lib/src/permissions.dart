@@ -8,6 +8,7 @@ import 'core.dart';
 class ChatPermissions {
   /// Whether members can send text messages, contacts, invoices, locations, and venues.
   final bool? canSendMessages;
+
   /// Whether members can send audio files.
   final bool? canSendAudios;
 
@@ -73,11 +74,15 @@ class ChatPermissions {
         if (canSendDocuments != null) 'can_send_documents': canSendDocuments,
         if (canSendPhotos != null) 'can_send_photos': canSendPhotos,
         if (canSendVideos != null) 'can_send_videos': canSendVideos,
-        if (canSendVideoNotes != null) 'can_send_video_notes': canSendVideoNotes,
-        if (canSendVoiceNotes != null) 'can_send_voice_notes': canSendVoiceNotes,
+        if (canSendVideoNotes != null)
+          'can_send_video_notes': canSendVideoNotes,
+        if (canSendVoiceNotes != null)
+          'can_send_voice_notes': canSendVoiceNotes,
         if (canSendPolls != null) 'can_send_polls': canSendPolls,
-        if (canSendOtherMessages != null) 'can_send_other_messages': canSendOtherMessages,
-        if (canAddWebPagePreviews != null) 'can_add_web_page_previews': canAddWebPagePreviews,
+        if (canSendOtherMessages != null)
+          'can_send_other_messages': canSendOtherMessages,
+        if (canAddWebPagePreviews != null)
+          'can_add_web_page_previews': canAddWebPagePreviews,
         if (canChangeInfo != null) 'can_change_info': canChangeInfo,
         if (canInviteUsers != null) 'can_invite_users': canInviteUsers,
         if (canPinMessages != null) 'can_pin_messages': canPinMessages,
@@ -94,6 +99,7 @@ class ChatPermissions {
 class ChatAdministratorRights {
   /// Whether the admin's presence is hidden (shown as the chat itself rather than a named user).
   final bool isAnonymous;
+
   /// Whether the admin has general chat-management access (see the group's members list, etc).
   final bool canManageChat;
 
@@ -185,7 +191,8 @@ abstract class ReactionType {
   factory ReactionType.emoji(String emoji) => _EmojiReaction(emoji);
 
   /// A reaction using a custom emoji sticker, identified by [customEmojiId].
-  factory ReactionType.customEmoji(String customEmojiId) => _CustomEmojiReaction(customEmojiId);
+  factory ReactionType.customEmoji(String customEmojiId) =>
+      _CustomEmojiReaction(customEmojiId);
 
   /// A paid-star reaction (Telegram Stars).
   factory ReactionType.paid() => _PaidReaction();

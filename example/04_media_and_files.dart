@@ -38,14 +38,22 @@ Future<void> main() async {
       // (Swap this path for a real file on your machine to try it.)
       final path = 'example/assets/sample.jpg';
       if (File(path).existsSync()) {
-        await bot.sendPhoto(chatId, InputFile.path(path), caption: 'Uploaded from disk.');
+        await bot.sendPhoto(
+          chatId,
+          InputFile.path(path),
+          caption: 'Uploaded from disk.',
+        );
       } else {
-        await bot.sendMessage(chatId, 'Put a sample.jpg at $path to try this one!');
+        await bot.sendMessage(
+          chatId,
+          'Put a sample.jpg at $path to try this one!',
+        );
       }
     } else if (text == '/photo_bytes') {
       // Upload raw bytes you already have in memory — e.g. bytes you
       // generated, downloaded, or received from another API.
-      final bytes = await InputFile.url('https://picsum.photos/200').readBytes();
+      final bytes =
+          await InputFile.url('https://picsum.photos/200').readBytes();
       await bot.sendPhoto(
         chatId,
         InputFile.bytes(bytes, filename: 'generated.jpg'),
@@ -55,7 +63,10 @@ Future<void> main() async {
       // Send up to 10 photos/videos as a single grouped album message.
       await bot.sendMediaGroup(chatId, [
         InputMediaPhoto(InputFile.url('https://picsum.photos/seed/1/600')),
-        InputMediaPhoto(InputFile.url('https://picsum.photos/seed/2/600'), caption: 'Second photo has a caption'),
+        InputMediaPhoto(
+          InputFile.url('https://picsum.photos/seed/2/600'),
+          caption: 'Second photo has a caption',
+        ),
         InputMediaPhoto(InputFile.url('https://picsum.photos/seed/3/600')),
       ]);
     } else if (update.message?['photo'] != null) {
@@ -67,7 +78,10 @@ Future<void> main() async {
 
       // Download the actual bytes of that photo.
       final bytes = await bot.downloadFileById(fileId);
-      await bot.sendMessage(chatId, 'Thanks! I downloaded ${bytes.length} bytes of your photo.');
+      await bot.sendMessage(
+        chatId,
+        'Thanks! I downloaded ${bytes.length} bytes of your photo.',
+      );
     } else {
       await bot.sendMessage(
         chatId,
