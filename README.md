@@ -2,6 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/ptgb.svg)](https://pub.dev/packages/ptgb)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![docs](https://img.shields.io/badge/docs-doc.psdkjoon.ir-blue.svg)](https://doc.psdkjoon.ir/ptgb)
 
 A complete client for the [Telegram Bot API](https://core.telegram.org/bots/api). Methods
 for every endpoint + keyboards, media, webhooks, payments, stickers,
@@ -144,6 +145,12 @@ keyboards, media, payments, stickers, invite links, and webhooks. Start with
   if another package you're using also exports a `User`, `Chat`, or
   `Message`, import one of them with a prefix to disambiguate.
 - Requires Dart SDK `^3.5.0`.
+
+## Documentation
+
+Full docs / wiki: **[doc.psdkjoon.ir/ptgb](https://doc.psdkjoon.ir/ptgb)**
+(mirrors: [doc.psdk.space/ptgb](https://doc.psdk.space/ptgb),
+[doc.psdk.fun/ptgb](https://doc.psdk.fun/ptgb)).
 
 ## Contributing
 

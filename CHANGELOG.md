@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.1
+
+### Added
+- Typed getter: `GameHighScore` (`lib/src/models.dart`) — `position`, `user` (as `User`), `score`, matching the existing `User`/`Chat`/`Message` wrapper pattern. Fixes the last spot (`getGameHighScores` results) where a per-item value had no typed path.
+- README: docs badge and a "Documentation" section linking the main wiki (`doc.psdkjoon.ir/ptgb`) plus mirrors (`doc.psdk.space/ptgb`, `doc.psdk.fun/ptgb`).
+
+### Changed
+- Examples updated to use existing `Update` shortcuts instead of manually indexing raw JSON: `13_invite_links_and_join_requests.dart` (`userId`/`chatId`/`username`), `05_polls_dice_reactions.dart` (`messageId`), `07_chat_and_forum_admin.dart` (`replyToMessage`), `34_business_account_profile.dart`/`35_business_stars_and_messages.dart`/`36_stories.dart` (`businessConnection`), `20_new_bot_api_concepts.dart` (`text`), and `30_games_and_high_scores.dart` (new `GameHighScore` wrapper).
+
 ## 1.1.0
 
 ### Added

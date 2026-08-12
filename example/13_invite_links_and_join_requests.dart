@@ -44,9 +44,12 @@ Future<void> main() async {
     // and `chat` (which chat they're trying to join).
     final joinRequest = update.chatJoinRequest;
     if (joinRequest != null) {
-      final userId = joinRequest['from']['id'] as int;
-      final chatId = joinRequest['chat']['id'] as int;
-      final username = joinRequest['from']['username'] as String?;
+      // `Update.userId`/`chatId`/`username` already resolve through
+      // `chatJoinRequest`'s `from`/`chat` fields, so no need to index the
+      // raw JSON by hand.
+      final userId = update.userId!;
+      final chatId = update.chatId!;
+      final username = update.username;
 
       // A real bot might check an allowlist, a captcha answer, an account
       // age, etc. here before deciding. This demo just approves everyone

@@ -33,7 +33,7 @@ Future<void> main() async {
     final chatId = update.chatId;
     final text = update.text;
     final businessConnectionId =
-        update.raw['business_connection']?['id'] as String?;
+        update.businessConnection?['id'] as String?;
     if (chatId == null || text == null) continue;
 
     if (businessConnectionId == null) {

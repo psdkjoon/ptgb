@@ -25,11 +25,11 @@ Future<void> main() async {
     // --- Reacting to messages -----------------------------------------------
     // If any message arrives, leave a 👍 reaction on it as a lightweight
     // acknowledgement, without sending a new message.
-    final message = update.message;
-    if (message != null && chatId != null) {
+    final messageId = update.messageId;
+    if (update.message != null && chatId != null && messageId != null) {
       await bot.setMessageReaction(
         chatId,
-        message['message_id'] as int,
+        messageId,
         reaction: [ReactionType.emoji('👍')],
       );
     }

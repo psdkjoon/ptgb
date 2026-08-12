@@ -27,8 +27,7 @@ Future<void> main() async {
 
     // Commands below expect a reply to the target user's message, e.g.
     // reply to someone's message with "/mute" to mute them.
-    final repliedTo =
-        update.message?['reply_to_message'] as Map<String, dynamic>?;
+    final repliedTo = update.replyToMessage;
     final targetUserId = (repliedTo?['from'] as Map?)?['id'] as int?;
 
     if (text == '/mute' && targetUserId != null) {

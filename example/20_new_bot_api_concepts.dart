@@ -169,7 +169,7 @@ Future<void> main() async {
     // shortcut) to send exactly one reply back via `answerGuestQuery`.
     if (update.guestMessage != null) {
       final guestQueryId = update.guestQueryId!;
-      log('Guest message: ${update.guestMessage!['text']}');
+      log('Guest message: ${update.text}');
       await bot.answerGuestQuery(guestQueryId, {
         'type': 'article',
         'id': '1',

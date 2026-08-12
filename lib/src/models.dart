@@ -299,5 +299,28 @@ class Message {
   String toString() => 'Message($messageId in ${chat.id})';
 }
 
+/// A thin, read-only typed wrapper around a raw Telegram `GameHighScore`
+/// JSON object — the shape returned in the list from
+/// `Bot.getGameHighScores`.
+class GameHighScore {
+  /// The raw JSON this wrapper reads from.
+  final Json raw;
+
+  /// Wraps a raw `GameHighScore` JSON object.
+  const GameHighScore(this.raw);
+
+  /// This player's position on the leaderboard.
+  int get position => raw['position'] as int;
+
+  /// The player this score belongs to.
+  User get user => User(raw['user'] as Json);
+
+  /// The player's score.
+  int get score => raw['score'] as int;
+
+  @override
+  String toString() => 'GameHighScore(#$position ${user.fullName}: $score)';
+}
+
 T? _wrapOrNull<T>(dynamic raw, T Function(Json) wrap) =>
     raw == null ? null : wrap(raw as Json);
