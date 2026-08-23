@@ -33,23 +33,21 @@ Future<void> main() async {
     if (chatId == null || text == null || userId == null) continue;
 
     if (text == '/prepare_share_card') {
-      // The `result` shape here is the same as what you'd hand to
+      // The `result` here is the same as what you'd hand to
       // `answerInlineQuery` for a single result — see 08_inline_queries.dart.
       final prepared = await bot.savePreparedInlineMessage(
         userId,
-        {
-          'type': 'article',
-          'id': 'share-card',
-          'title': 'Check out ptgb',
-          'input_message_content': {
-            'message_text':
-                'ptgb — a complete Dart client for the Telegram Bot API.',
-          },
-        },
+        InlineQueryResultArticle(
+          'share-card',
+          'Check out ptgb',
+          InputTextMessageContent(
+            'ptgb — a complete Dart client for the Telegram Bot API.',
+          ),
+        ),
         allowUserChats: true,
         allowGroupChats: true,
       );
-      final preparedId = prepared['id'] as String;
+      final preparedId = prepared.id;
 
       // Give the user a button that shares this prepared result into any
       // chat they pick, without re-running your inline-query logic.
@@ -59,10 +57,9 @@ Future<void> main() async {
         replyMarkup: InlineKeyboardMarkup.single([
           InlineKeyboardButton(
             text: 'Share',
-            switchInlineQueryChosenChat: {
-              'query': '',
-              'prepared_inline_message_id': preparedId,
-            },
+            switchInlineQueryChosenChat: SwitchInlineQueryChosenChat(
+              preparedInlineMessageId: preparedId,
+            ),
           ),
         ]),
       );
@@ -71,14 +68,14 @@ Future<void> main() async {
       // rather than an inline result.
       final prepared = await bot.savePreparedKeyboardButton(
         userId,
-        {
-          'text': 'Send feedback',
-          'request_users': {'request_id': 1},
-        },
+        KeyboardButton(
+          'Send feedback',
+          requestUsers: KeyboardButtonRequestUsers(1),
+        ),
       );
       await bot.sendMessage(
         chatId,
-        'Prepared keyboard button: ${prepared['id']}',
+        'Prepared keyboard button: ${prepared.id}',
       );
     } else {
       await bot.sendMessage(

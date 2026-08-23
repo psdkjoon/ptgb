@@ -38,7 +38,7 @@ the token from `.env` instead, which is the approach to actually use.
 | `05_polls_dice_reactions.dart` | Native polls, quizzes, animated dice, message reactions. |
 | `06_callback_queries_and_editing.dart` | A live-editing counter — `editMessageText` in action. |
 | `07_chat_and_forum_admin.dart` | Muting/unmuting members, pinning, forum topics. |
-| `08_inline_queries.dart` | Inline mode (`@yourbot ...` in any chat). |
+| `08_inline_queries.dart` | Inline mode (`@yourbot ...` in any chat) using typed `InlineQueryResult*` classes. |
 | `09_payments_and_stars.dart` | Selling something with Telegram Stars, the full invoice → checkout → success flow. |
 | `10_webhook_server.dart` | Switching from polling to a production-style webhook server. |
 | `11_god_mode_bot.dart` | **Everything above, combined** into one polished, menu-driven bot. Start here if you just want to see what's possible, then dip into the earlier files for the details. |
@@ -48,8 +48,8 @@ the token from `.env` instead, which is the approach to actually use.
 | `15_error_handling_and_retries.dart` | Handling `TelegramApiException`: rate limits (429), blocked chats (403), and retry/backoff. |
 | `16_custom_env_config.dart` | Overriding the `.env` filename and key via `dotFileName`/`envKey`. |
 | `17_rate_limiting.dart` | Automatically pacing outgoing requests with the optional `RateLimiter`. |
-| `18_typed_message_helpers.dart` | Typed `User`/`Chat`/`Message` getters as an alternative to raw JSON. |
-| `19_update_shortcuts_and_any_message.dart` | `Update`'s direct-access shortcuts (`userId`, `messageId`, `username`, ...) and the `anyMessage` raw-JSON fallback for photos, locations, documents, and contacts. |
+| `18_typed_message_helpers.dart` | Typed `User`/`Chat`/`Message` getters — now the default for every `Update`/`Message` field. |
+| `19_update_shortcuts_and_any_message.dart` | `Update`'s direct-access shortcuts (`userId`, `messageId`, `username`, ...) and the `anyMessage` typed fallback for photos, locations, documents, and contacts. |
 | `20_new_bot_api_concepts.dart` | The newest Bot API concepts: checklists, rich messages, suggested posts, ephemeral messages, guest queries, and guard-bot join requests. |
 | `21_reply_parameters_and_quoting.dart` | `ReplyParameters` in depth: plain replies, quoting a specific excerpt, and `allowSendingWithoutReply`. |
 | `22_link_preview_options.dart` | Disabling, redirecting, and resizing a text message's link preview with `LinkPreviewOptions`. |
@@ -67,10 +67,11 @@ the token from `.env` instead, which is the approach to actually use.
 | `34_business_account_profile.dart` | Editing a connected Business Account's name, username, bio, photo, and gift settings. |
 | `35_business_stars_and_messages.dart` | A connected Business Account's Star balance/transfers and marking/deleting its messages. |
 | `36_stories.dart` | Posting, editing, and deleting Telegram Stories via a Business Connection. |
-| `37_prepared_messages.dart` | Pre-registering reusable inline results and keyboard buttons with `savePreparedInlineMessage`/`savePreparedKeyboardButton`. |
+| `37_prepared_messages.dart` | Pre-registering reusable typed inline results and keyboard buttons with `savePreparedInlineMessage`/`savePreparedKeyboardButton`. |
 | `38_subscription_invite_links.dart` | Paid recurring-membership invite links and canceling a user's Star subscription. |
 | `39_message_drafts.dart` | Pre-filling a chat's input field without sending, via `sendMessageDraft`/`sendRichMessageDraft`. |
 | `40_custom_emoji_and_sticker_details.dart` | Looking up sticker sets and custom emoji, and re-tagging an existing sticker's search metadata. |
+| `41_inline_query_result_gallery.dart` | Reference gallery: one of every `InlineQueryResult*` (including `Cached*` variants) and `InputMessageContent*` subtype. |
 
 ## A note on error handling
 

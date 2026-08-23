@@ -16,14 +16,14 @@
 //      edited one, a channel post, ...) so you don't have to null-check
 //      five different fields yourself.
 //
-//   2. `anyMessage` — the raw JSON of whichever message-like payload is
-//      present on the update (checked in the order: `message`,
+//   2. `anyMessage` — the typed `Message` for whichever message-like
+//      payload is present on the update (checked in the order: `message`,
 //      `editedMessage`, `channelPost`, `editedChannelPost`,
 //      `businessMessage`, `editedBusinessMessage`, `guestMessage`). Every
 //      shortcut above is really just a null-safe read off `anyMessage`,
-//      and you can do the same for any field ptgb doesn't have a shortcut
-//      for yet — photo `file_id`s, location coordinates, a document's
-//      filename, contact info, and so on all live there.
+//      and you can do the same for any typed getter ptgb ships on
+//      `Message` — photos, locations, documents, contacts, and so on all
+//      live there.
 //
 // HOW TO RUN:
 //   dart run example/19_update_shortcuts_and_any_message.dart   (with a `.env` file)
@@ -61,8 +61,7 @@ Future<void> main() async {
       // replying to another message with /whoami, or sending a message
       // containing a URL or @mention, to see them populate.
       if (update.replyToMessage != null) {
-        lines
-            .add('replying to message ${update.replyToMessage!['message_id']}');
+        lines.add('replying to message ${update.replyToMessage!.messageId}');
       }
       if (update.entities != null) {
         final types = update.entities!.map((e) => e['type']).join(', ');
@@ -72,61 +71,61 @@ Future<void> main() async {
       continue;
     }
 
-    // `caption` is the shortcut version of `anyMessage?['caption']` — it
+    // `caption` is the shortcut version of `anyMessage?.caption` — it
     // covers photos, videos, documents, etc. all at once.
     if (update.caption != null) {
       await bot.sendMessage(chatId, 'Nice caption: "${update.caption}"');
       continue;
     }
 
-    // --- Part 2: anyMessage as a raw-JSON fallback ----------------------
+    // --- Part 2: anyMessage as a typed fallback ------------------------
     //
-    // ptgb only ships typed shortcuts for the fields most bots need. For
-    // everything else — the specific shape of a photo, location, contact,
-    // document, etc. — read it straight off `anyMessage`, exactly like
-    // you'd read any other Telegram Bot API JSON field.
+    // ptgb only ships direct `Update` shortcuts for the fields most bots
+    // need day-to-day. For everything else, read the typed getter
+    // straight off `anyMessage` — exactly like you'd read any other
+    // field on a `Message`.
     final msg = update.anyMessage;
     if (msg == null) continue;
 
-    // Photos: `photo` is an array of `PhotoSize`s (same image at several
+    // Photos: `photo` is a list of `PhotoSize`s (same image at several
     // resolutions) — the last entry is the largest.
-    final photoSizes = msg['photo'] as List?;
+    final photoSizes = msg.photo;
     if (photoSizes != null && photoSizes.isNotEmpty) {
-      final largest = photoSizes.last as Json;
+      final largest = photoSizes.last;
       await bot.sendMessage(
         chatId,
         'Got a photo! Largest size: '
-        '${largest['width']}x${largest['height']}, file_id: ${largest['file_id']}',
+        '${largest.width}x${largest.height}, file_id: ${largest.fileId}',
       );
       continue;
     }
 
-    // Locations: plain `latitude`/`longitude` fields.
-    final location = msg['location'] as Json?;
+    // Locations: plain `latitude`/`longitude` getters.
+    final location = msg.location;
     if (location != null) {
       await bot.sendMessage(
         chatId,
-        'Location received: ${location['latitude']}, ${location['longitude']}',
+        'Location received: ${location.latitude}, ${location.longitude}',
       );
       continue;
     }
 
-    // Documents: `file_name` and `mime_type` live alongside the usual `file_id`.
-    final document = msg['document'] as Json?;
+    // Documents: `fileName` and `mimeType` live alongside the usual `fileId`.
+    final document = msg.document;
     if (document != null) {
       await bot.sendMessage(
         chatId,
-        'Document: ${document['file_name']} (${document['mime_type']})',
+        'Document: ${document.fileName} (${document.mimeType})',
       );
       continue;
     }
 
     // Contacts: shared straight from the user's address book.
-    final contact = msg['contact'] as Json?;
+    final contact = msg.contact;
     if (contact != null) {
       await bot.sendMessage(
         chatId,
-        'Contact: ${contact['first_name']} — ${contact['phone_number']}',
+        'Contact: ${contact.firstName} — ${contact.phoneNumber}',
       );
       continue;
     }

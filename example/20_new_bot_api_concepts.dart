@@ -35,7 +35,7 @@ Future<void> main() async {
     // `business_connection` update once a user connects their Telegram
     // Business account to it (Settings > Business > Chatbots, on their
     // end). This snippet shows the call shape; wire it up to a real
-    // `update.businessConnection?['id']` once you have one connected.
+    // `update.businessConnection?.id` once you have one connected.
     if (update.text == '/checklist-demo') {
       const businessConnectionId = 'REPLACE_WITH_A_REAL_BUSINESS_CONNECTION_ID';
       final checklist = InputChecklist(
@@ -107,7 +107,7 @@ Future<void> main() async {
     // `suggested_post_info` set. The bot (with the right admin rights)
     // approves or declines it — it isn't published until approved.
     final suggestedPostInfo =
-        update.anyMessage?['suggested_post_info'] as Json?;
+        update.anyMessage?.raw['suggested_post_info'] as Json?;
     if (suggestedPostInfo != null) {
       final chatId = update.chatId!;
       final messageId = update.messageId!;
@@ -170,12 +170,14 @@ Future<void> main() async {
     if (update.guestMessage != null) {
       final guestQueryId = update.guestQueryId!;
       log('Guest message: ${update.text}');
-      await bot.answerGuestQuery(guestQueryId, {
-        'type': 'article',
-        'id': '1',
-        'title': 'Hello from a guest bot',
-        'input_message_content': {'message_text': 'Thanks for summoning me!'},
-      });
+      await bot.answerGuestQuery(
+        guestQueryId,
+        InlineQueryResultArticle(
+          '1',
+          'Hello from a guest bot',
+          InputTextMessageContent('Thanks for summoning me!'),
+        ),
+      );
       continue;
     }
 

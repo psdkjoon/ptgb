@@ -48,9 +48,9 @@ Future<void> main() async {
       final shortDescription = await bot.getMyShortDescription();
       await bot.sendMessage(
         chatId,
-        'Name: ${name['name']}\n'
-        'Description: ${description['description']}\n'
-        'Short description: ${shortDescription['short_description']}',
+        'Name: ${name.name}\n'
+        'Description: ${description.description}\n'
+        'Short description: ${shortDescription.shortDescription}',
       );
     } else if (text == '/web_app_menu') {
       // Replaces the default "Menu" button (which normally opens the

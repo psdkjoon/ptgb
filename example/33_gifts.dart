@@ -36,10 +36,8 @@ Future<void> main() async {
 
     if (text == '/catalog') {
       final catalog = await bot.getAvailableGifts();
-      final gifts = catalog['gifts'] as List;
-      final lines = gifts.take(5).map((g) {
-        final gift = g as Map<String, dynamic>;
-        return '${gift['emoji']} — ${gift['star_count']} Stars';
+      final lines = catalog.gifts.take(5).map((gift) {
+        return '${gift.sticker.emoji ?? '🎁'} — ${gift.starCount} Stars';
       });
       await bot.sendMessage(
         chatId,
@@ -64,7 +62,7 @@ Future<void> main() async {
       );
     } else if (text == '/my_gifts') {
       final owned = await bot.getUserGifts(userId, limit: 5);
-      final gifts = owned['gifts'] as List;
+      final gifts = owned.gifts;
       await bot.sendMessage(
         chatId,
         gifts.isEmpty

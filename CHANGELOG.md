@@ -1,5 +1,86 @@
 # Changelog
 
+## 2.0.0
+
+### Added
+- `Update`'s payload getters (`.callbackQuery`, `.inlineQuery`,
+  `.chosenInlineResult`, `.shippingQuery`, `.preCheckoutQuery`,
+  `.chatJoinRequest`, `.myChatMember`/`.chatMember`, `.pollAnswer`,
+  `.messageReaction`/`.messageReactionCount`, `.businessConnection`,
+  `.deletedBusinessMessages`, `.purchasedPaidMedia`, `.chatBoost`,
+  `.removedChatBoost`, `.subscription`) now return typed wrapper classes
+  directly instead of raw `Json`: `CallbackQuery`, `InlineQuery`,
+  `ChosenInlineResult`, `ShippingQuery`, `PreCheckoutQuery`,
+  `ChatJoinRequest`, `ChatMemberUpdated`, `PollAnswer`,
+  `MessageReactionUpdated`, `MessageReactionCountUpdated`,
+  `BusinessConnection`, `BusinessMessagesDeleted`, `PaidMediaPurchased`,
+  `ChatBoostUpdated`, `ChatBoostRemoved`, `ChatSubscriptionUpdated`
+  (`lib/src/updates.dart`).
+- `Message`'s content getters (`.photo`, `.location`, `.document`, `.video`,
+  `.audio`, `.voice`, `.animation`, `.videoNote`, `.contact`, `.venue`,
+  `.poll`, `.sticker`, `.invoice`, `.successfulPayment`, `.game`, `.dice`,
+  `.webAppData`, ...) now return typed wrapper classes: `PhotoSize`,
+  `Location`, `Document`, `Video`, `Audio`, `Voice`, `Animation`,
+  `VideoNote`, `Contact`, `Venue`, `Poll`, `PollOption`, `Sticker`,
+  `Invoice`, `SuccessfulPayment`, `OrderInfo`, `ShippingAddress`, `Game`,
+  `Dice`, `WebAppData` (`lib/src/models.dart`). `newChatMembers` is now
+  `List<User>` and `leftChatMember` is now `User?`.
+- Every `Bot` method that used to return raw `Json`/`List<Json>` now
+  returns a typed class/`List` of one, including: `Message` (`sendMessage`
+  and every other `send*`/`forward*`/`editMessage*` method that returns a
+  message), `MessageId` (`copyMessage`, `copyMessages`), `User` (`getMe`),
+  `WebhookInfo`, `UserProfilePhotos`, `TelegramFile` (`getFile`,
+  `uploadStickerFile` — named to avoid clashing with `dart:io`'s `File`),
+  `ChatInviteLink`, `ChatFullInfo` (`getChat`), `ChatMember`
+  (`getChatMember`, `getChatAdministrators`), `ForumTopic`, `BotName`,
+  `BotDescription`, `BotShortDescription`, `MenuButton`,
+  `ChatAdministratorRights` (now with a `.fromJson` factory),
+  `SentWebAppMessage`, `PreparedInlineMessage`, `StarTransactions`,
+  `StickerSet`, `UserChatBoosts`, `ChatBoost`, `StarAmount`, `OwnedGifts`,
+  `OwnedGift`, `Gifts`, `Gift`, `Story`, `Poll` (`stopPoll`),
+  `UserProfileAudios`, `List<BotCommand>` (`getMyCommands`).
+- `editMessage*`/`setGameScore` (which Telegram may answer with either the
+  edited `Message` or `true`, depending on whether you addressed the
+  message by `chatId`/`messageId` or by `inlineMessageId`) now return
+  `Future<Object>` holding one or the other, instead of `Future<dynamic>`.
+- A full typed inline query result hierarchy
+  (`lib/src/inline_query_result.dart`): `InlineQueryResult` (base) plus
+  `InlineQueryResultArticle`, `..Photo`, `..Gif`, `..Mpeg4Gif`, `..Video`,
+  `..Audio`, `..Voice`, `..Document`, `..Location`, `..Venue`,
+  `..Contact`, `..Game`, `..Sticker`, and the `..Cached*` variants for
+  every media type that supports a cached `file_id`. Plus a small
+  `inlineQueryResults([...])` helper to convert a list to the JSON
+  `answerInlineQuery` expects.
+- A typed input message content hierarchy
+  (`lib/src/input_message_content.dart`): `InputMessageContent` (base),
+  `InputTextMessageContent`, `InputLocationMessageContent`,
+  `InputVenueMessageContent`, `InputContactMessageContent`,
+  `InputInvoiceMessageContent`.
+- `keyboards.dart`: `LoginUrl` and `SwitchInlineQueryChosenChat` classes
+  (for `InlineKeyboardButton.loginUrl`/`.switchInlineQueryChosenChat`),
+  `InlineKeyboardButton.copyText` is now a plain `String?`,
+  `KeyboardButtonPollType`, `KeyboardButtonRequestUsers`, and
+  `KeyboardButtonRequestChat` classes (for `KeyboardButton.requestPoll`/
+  `.requestUsers`/`.requestChat`).
+- `WebAppInitData.user`/`.receiver` now return `User?`, and `.chat` returns
+  `Chat?`, instead of raw `Json?`.
+
+### Changed
+- **Breaking:** `Bot.answerInlineQuery` now takes
+  `List<InlineQueryResult>` instead of `List<Json>`.
+  `Bot.savePreparedInlineMessage`, `Bot.answerWebAppQuery`, and
+  `Bot.answerGuestQuery` now take a single `InlineQueryResult` instead of
+  raw `Json`. `Bot.savePreparedKeyboardButton` now takes a typed
+  `KeyboardButton` instead of raw `Json`.
+- **Breaking:** every method listed above that used to return `Json` or
+  `List<Json>` (or, for the `editMessage*` family, `dynamic`) now returns
+  its typed counterpart. See "Added" above for the full method-to-type
+  mapping, or `MIGRATING.md` for a migration walkthrough.
+- **Breaking:** `Update`'s payload getters and `Message`'s content getters
+  now return typed wrapper classes directly instead of raw `Json` — see
+  "Added" above. `.raw` remains available on every wrapper for anything
+  not covered by a getter.
+
 ## 1.1.1
 
 ### Added

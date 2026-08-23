@@ -28,7 +28,7 @@ Future<void> main() async {
     // Commands below expect a reply to the target user's message, e.g.
     // reply to someone's message with "/mute" to mute them.
     final repliedTo = update.replyToMessage;
-    final targetUserId = (repliedTo?['from'] as Map?)?['id'] as int?;
+    final targetUserId = repliedTo?.from?.id;
 
     if (text == '/mute' && targetUserId != null) {
       // Restrict the user from sending anything, for 10 minutes.
@@ -55,7 +55,7 @@ Future<void> main() async {
       );
       await bot.sendMessage(chatId, 'Unmuted.');
     } else if (text == '/pin') {
-      final messageId = repliedTo?['message_id'] as int?;
+      final messageId = repliedTo?.messageId;
       if (messageId != null) {
         await bot.pinChatMessage(chatId, messageId);
         await bot.sendMessage(chatId, 'Pinned.');
@@ -70,14 +70,14 @@ Future<void> main() async {
       );
       await bot.sendMessage(
         chatId,
-        'Created topic "${topic['name']}" (id: ${topic['message_thread_id']}).',
+        'Created topic "${topic.name}" (id: ${topic.messageThreadId}).',
       );
     } else if (text == '/chat_info') {
       final info = await bot.getChat(chatId);
       final memberCount = await bot.getChatMemberCount(chatId);
       await bot.sendMessage(
         chatId,
-        'Chat: ${info['title'] ?? info['first_name']}\nMembers: $memberCount',
+        'Chat: ${info.title ?? info.firstName}\nMembers: $memberCount',
       );
     } else {
       await bot.sendMessage(

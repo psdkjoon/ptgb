@@ -39,10 +39,13 @@ Future<void> main() async {
   accounts, Stories, and Web Apps.
 - **Two update sources** — long-polling out of the box (`Bot.poll`) or your
   own webhook server (`Bot.serveWebhook`).
-- **Typed helpers**, not raw JSON, for keyboards (`InlineKeyboardMarkup`,
-  `ReplyKeyboardMarkup`), media (`InputMedia*`), permissions
-  (`ChatPermissions`, `ChatAdministratorRights`), and — optionally, if you
-  want it — incoming `User`/`Chat`/`Message` payloads.
+- **Typed helpers, not raw JSON, everywhere** — keyboards
+  (`InlineKeyboardMarkup`, `ReplyKeyboardMarkup`), media (`InputMedia*`),
+  permissions (`ChatPermissions`, `ChatAdministratorRights`), inline query
+  results (`InlineQueryResult*`/`InputMessageContent*`), and every incoming
+  `Update`/`Message` payload and outgoing method's response
+  (`User`/`Chat`/`Message`, `ChatFullInfo`, `StickerSet`, ...) — no more
+  `something['somethingelse']`.
 - **Optional rate limiting** — pass `Bot(rateLimiter: RateLimiter())` to
   automatically pace outgoing requests instead of handling every 429 yourself.
 - **Telegram Mini App support** — verify a Web App's signed `initData` with
@@ -133,14 +136,16 @@ keyboards, media, payments, stickers, invite links, and webhooks. Start with
   `example/15_error_handling_and_retries.dart`. If you'd rather pace
   requests proactively, pass `Bot(rateLimiter: RateLimiter())` — see
   `example/17_rate_limiting.dart`.
-- **Inline query results are raw JSON `Map`s, not typed classes** — there
-  are many result types (article, photo, gif, ...) with very different
-  shapes, so this is intentional for now.
-- **Incoming `User`/`Chat`/`Message` payloads are raw JSON by default, with
-  optional typed wrappers available.** `Update`'s own getters (`.message`,
-  `.chat`, `.from`, ...) still return raw `Json` for zero-overhead access.
-  Wrap the result in `User`/`Chat`/`Message` (`Message(update.message!)`)
-  when you want typed getters instead — see
+- **Inline query results are typed classes, not raw JSON `Map`s.** Build a
+  list of `InlineQueryResult*` subtypes (`InlineQueryResultArticle`,
+  `InlineQueryResultPhoto`, `InlineQueryResultCachedPhoto`, ...) and pass it
+  to `Bot.answerInlineQuery` — see `example/08_inline_queries.dart` and
+  `example/41_inline_query_result_gallery.dart`.
+- **Incoming `User`/`Chat`/`Message` payloads (and every method's response)
+  are typed classes.** `Update`'s own getters (`.message`, `.chat`, `.from`,
+  ...) return typed wrappers directly — `update.message?.text`,
+  `update.from?.username`, etc. — with `.raw` always available underneath
+  for anything not covered by a getter. See
   `example/18_typed_message_helpers.dart`. These are common class names, so
   if another package you're using also exports a `User`, `Chat`, or
   `Message`, import one of them with a prefix to disambiguate.

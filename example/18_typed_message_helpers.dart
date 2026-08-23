@@ -5,14 +5,13 @@
 // ============================================================================
 //
 // `Update`'s own getters (`.message`, `.chat`, `.from`, `.text`, ...) return
-// raw `Json` — fast, zero-overhead, and exactly what earlier examples use.
+// typed wrapper classes directly — `Update.message` is already a `Message`,
+// `Message.from` is already a `User`, and so on, all the way down into
+// content fields like `.photo`, `.location`, and `.poll`.
 //
-// If you'd rather work with typed getters instead of `map['field'] as
-// SomeType` everywhere, wrap that raw JSON in `User`, `Chat`, or `Message`.
-// These are read-only wrappers around the same JSON — nothing is copied or
-// re-fetched, and `.raw` is always there for anything not covered by a
-// getter. Like `Update` itself, deeply-nested content (photos, polls,
-// service messages, ...) stays raw JSON rather than being fully modeled.
+// `.raw` is always available on every wrapper for anything not covered by
+// a getter — these are just thin, read-only views over the same underlying
+// JSON, so wrapping (or re-wrapping) one is always cheap.
 //
 // Note: `User`, `Chat`, and `Message` are common names. If another package
 // you're using also exports classes with these names, import ptgb with a
@@ -31,12 +30,8 @@ Future<void> main() async {
   final bot = Bot();
 
   await for (final update in bot.poll()) {
-    final rawMessage = update.message;
-    if (rawMessage == null) continue;
-
-    // Wrap the raw JSON. This is just a view over `rawMessage` — cheap to
-    // create, and safe to throw away and re-wrap as often as you like.
-    final message = Message(rawMessage);
+    final message = update.message;
+    if (message == null) continue;
 
     // Typed getters instead of `rawMessage['from']?['first_name']`.
     final sender = message.from;
@@ -58,17 +53,19 @@ Future<void> main() async {
       continue;
     }
 
-    // Content-type fields that can have many different shapes (photos,
-    // polls, service messages, ...) are still raw JSON — pull fields off
-    // them the same way you would off `update.anyMessage`.
+    // Content types (photos, polls, locations, service messages, ...) are
+    // typed too, not just the top-level message.
     final photo = message.photo;
     if (photo != null && photo.isNotEmpty) {
       final biggest = photo.last; // Telegram lists sizes smallest-to-largest.
       await bot.sendMessage(
         message.chat.id,
-        'Got a photo! Largest size is ${biggest['width']}x${biggest['height']}, '
-        'file_id ${biggest['file_id']}.',
+        'Got a photo! Largest size is ${biggest.width}x${biggest.height}, '
+        'file_id ${biggest.fileId}.',
       );
     }
+
+    // If a field doesn't have a typed getter yet, `.raw` is always there —
+    // e.g. `message.raw['some_new_field']`.
   }
 }

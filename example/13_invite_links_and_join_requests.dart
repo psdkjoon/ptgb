@@ -40,7 +40,7 @@ Future<void> main() async {
 
   await for (final update in bot.poll()) {
     // Part 2: someone tapped a join-request link. `chatJoinRequest` is the
-    // raw JSON payload Telegram sends — it includes `from` (the requester)
+    // typed payload Telegram sends — it includes `from` (the requester)
     // and `chat` (which chat they're trying to join).
     final joinRequest = update.chatJoinRequest;
     if (joinRequest != null) {
@@ -77,7 +77,7 @@ Future<void> main() async {
       await bot.sendMessage(
         chatId,
         'Share this link — anyone who uses it will need my approval to join:\n'
-        '${link['invite_link']}',
+        '${link.inviteLink}',
       );
     }
   }

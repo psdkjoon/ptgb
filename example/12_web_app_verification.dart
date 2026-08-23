@@ -60,8 +60,8 @@ Future<void> main() async {
       ..write(
         jsonEncode({
           'ok': true,
-          'userId': user?['id'],
-          'firstName': user?['first_name'],
+          'userId': user?.id,
+          'firstName': user?.firstName,
           'authenticatedAt': parsed.authDate?.toIso8601String(),
         }),
       );

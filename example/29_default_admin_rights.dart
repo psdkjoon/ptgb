@@ -54,6 +54,10 @@ Future<void> main() async {
   final channelRights =
       await bot.getMyDefaultAdministratorRights(forChannels: true);
 
-  log('Group defaults: $groupRights');
-  log('Channel defaults: $channelRights');
+  log('Group defaults: canDeleteMessages=${groupRights.canDeleteMessages}, '
+      'canRestrictMembers=${groupRights.canRestrictMembers}, '
+      'canInviteUsers=${groupRights.canInviteUsers}');
+  log('Channel defaults: canPostMessages=${channelRights.canPostMessages}, '
+      'canEditMessages=${channelRights.canEditMessages}, '
+      'canDeleteMessages=${channelRights.canDeleteMessages}');
 }

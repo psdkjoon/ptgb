@@ -33,7 +33,7 @@ Future<void> main() async {
 
     if (callback != null) {
       final data = update.callbackData;
-      final messageId = (callback['message'] as Map)['message_id'] as int;
+      final messageId = callback.message!['message_id'] as int;
       final chatId = update.chatId!;
       final key = '$chatId:$messageId';
 
@@ -48,7 +48,7 @@ Future<void> main() async {
       _counters[key] = next;
 
       // Acknowledge the tap immediately so Telegram stops the loading spinner.
-      await bot.answerCallbackQuery(callback['id'] as String);
+      await bot.answerCallbackQuery(callback.id);
 
       // Edit the ORIGINAL message in place instead of sending a new one —
       // this is what makes counters, paginated menus, and live dashboards
@@ -70,7 +70,7 @@ Future<void> main() async {
         'Count: 0',
         replyMarkup: _counterKeyboard(),
       );
-      _counters['$chatId:${sent['message_id']}'] = 0;
+      _counters['$chatId:${sent.messageId}'] = 0;
     } else if (text != null && chatId != null) {
       await bot.sendMessage(
         chatId,

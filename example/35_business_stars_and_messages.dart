@@ -31,8 +31,7 @@ Future<void> main() async {
   await for (final update in bot.poll()) {
     final chatId = update.chatId;
     final text = update.text;
-    final businessConnectionId =
-        update.businessConnection?['id'] as String?;
+    final businessConnectionId = update.businessConnection?.id;
     if (chatId == null || text == null || businessConnectionId == null)
       continue;
 
@@ -41,7 +40,7 @@ Future<void> main() async {
           await bot.getBusinessAccountStarBalance(businessConnectionId);
       await bot.sendMessage(
         chatId,
-        'Business account Star balance: ${balance['amount']}',
+        'Business account Star balance: ${balance.amount}',
       );
     } else if (text == '/withdraw_stars') {
       // Moves Stars out of the connected business account into the bot's
@@ -50,7 +49,7 @@ Future<void> main() async {
       await bot.transferBusinessAccountStars(businessConnectionId, 100);
       await bot.sendMessage(chatId, 'Transferred 100 Stars.');
     } else if (text == '/mark_read') {
-      final targetMessageId = update.replyToMessage?['message_id'] as int?;
+      final targetMessageId = update.replyToMessage?.messageId;
       if (targetMessageId != null) {
         await bot.readBusinessMessage(
           businessConnectionId,
@@ -60,7 +59,7 @@ Future<void> main() async {
         await bot.sendMessage(chatId, 'Marked as read.');
       }
     } else if (text == '/delete_last') {
-      final targetMessageId = update.replyToMessage?['message_id'] as int?;
+      final targetMessageId = update.replyToMessage?.messageId;
       if (targetMessageId != null) {
         // Accepts a batch of message IDs, same as `deleteMessages`.
         await bot

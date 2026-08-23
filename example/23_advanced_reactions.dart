@@ -33,8 +33,7 @@ Future<void> main() async {
 
     // React to whichever message the command was sent as a reply to; if it
     // wasn't a reply, fall back to reacting to the command message itself.
-    final messageId =
-        update.replyToMessage?['message_id'] as int? ?? update.messageId;
+    final messageId = update.replyToMessage?.messageId ?? update.messageId;
     if (messageId == null) continue;
 
     switch (text) {

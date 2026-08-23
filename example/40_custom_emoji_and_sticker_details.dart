@@ -34,10 +34,10 @@ Future<void> main() async {
     if (text.startsWith('/set_info ')) {
       final name = text.substring('/set_info '.length).trim();
       final set = await bot.getStickerSet(name);
-      final stickers = set['stickers'] as List;
+      final stickers = set.stickers;
       await bot.sendMessage(
         chatId,
-        '${set['title']} — ${stickers.length} sticker(s), type: ${set['sticker_type']}',
+        '${set.title} — ${stickers.length} sticker(s), type: ${set.stickerType}',
       );
     } else if (text == '/topic_icons') {
       // The fixed palette of icon stickers Telegram offers for forum topics.
@@ -54,7 +54,7 @@ Future<void> main() async {
       } else {
         await bot.sendMessage(
           chatId,
-          'Resolved to sticker: ${stickers.first['file_id']}',
+          'Resolved to sticker: ${stickers.first.fileId}',
         );
       }
     } else if (text.startsWith('/retag ')) {

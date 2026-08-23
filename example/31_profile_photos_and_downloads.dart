@@ -33,7 +33,7 @@ Future<void> main() async {
 
     if (text == '/my_photo') {
       final photos = await bot.getUserProfilePhotos(userId, limit: 1);
-      final total = photos['total_count'] as int;
+      final total = photos.totalCount;
       if (total == 0) {
         await bot.sendMessage(chatId, 'You don\'t have a profile photo set.');
         continue;
@@ -41,9 +41,9 @@ Future<void> main() async {
 
       // Each entry in `photos` is itself a list of sizes of the same photo;
       // grab the largest size (last in the list) of the most recent photo.
-      final sizes = (photos['photos'] as List).first as List;
-      final largest = sizes.last as Map<String, dynamic>;
-      final fileId = largest['file_id'] as String;
+      final sizes = photos.photos.first;
+      final largest = sizes.last;
+      final fileId = largest.fileId;
 
       // `downloadFileById` combines `getFile` (resolving the file path)
       // and `downloadFile` (fetching the bytes) into one call.

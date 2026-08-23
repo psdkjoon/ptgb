@@ -31,7 +31,7 @@ Future<void> main() async {
     final preCheckout = update.preCheckoutQuery;
     if (preCheckout != null) {
       // Here you'd check stock, validate the payload, etc. We always accept.
-      await bot.answerPreCheckoutQuery(preCheckout['id'] as String, true);
+      await bot.answerPreCheckoutQuery(preCheckout.id, true);
       continue;
     }
 
@@ -40,8 +40,7 @@ Future<void> main() async {
 
     // Step 3: the payment succeeded — Telegram attaches this field to the
     // message that follows the invoice.
-    final successfulPayment =
-        update.message?['successful_payment'] as Map<String, dynamic>?;
+    final successfulPayment = update.message?.successfulPayment;
     if (successfulPayment != null && chatId != null) {
       await bot.sendMessage(
         chatId,

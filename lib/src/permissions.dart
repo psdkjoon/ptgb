@@ -162,6 +162,26 @@ class ChatAdministratorRights {
     this.canManageTopics,
   });
 
+  /// Reconstructs a [ChatAdministratorRights] from the raw JSON Telegram
+  /// returns (e.g. from `Bot.getMyDefaultAdministratorRights`).
+  factory ChatAdministratorRights.fromJson(Json raw) => ChatAdministratorRights(
+        isAnonymous: raw['is_anonymous'] as bool? ?? false,
+        canManageChat: raw['can_manage_chat'] as bool? ?? false,
+        canDeleteMessages: raw['can_delete_messages'] as bool? ?? false,
+        canManageVideoChats: raw['can_manage_video_chats'] as bool? ?? false,
+        canRestrictMembers: raw['can_restrict_members'] as bool? ?? false,
+        canPromoteMembers: raw['can_promote_members'] as bool? ?? false,
+        canChangeInfo: raw['can_change_info'] as bool? ?? false,
+        canInviteUsers: raw['can_invite_users'] as bool? ?? false,
+        canPostStories: raw['can_post_stories'] as bool? ?? false,
+        canEditStories: raw['can_edit_stories'] as bool? ?? false,
+        canDeleteStories: raw['can_delete_stories'] as bool? ?? false,
+        canPostMessages: raw['can_post_messages'] as bool?,
+        canEditMessages: raw['can_edit_messages'] as bool?,
+        canPinMessages: raw['can_pin_messages'] as bool?,
+        canManageTopics: raw['can_manage_topics'] as bool?,
+      );
+
   /// Converts these rights to the JSON shape Telegram's API expects.
   Json toJson() => {
         'is_anonymous': isAnonymous,

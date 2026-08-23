@@ -56,7 +56,7 @@ Future<void> main() async {
       // Telegram rolls the dice server-side and tells us the result —
       // this is provably fair, unlike generating a random number ourselves.
       final result = await bot.sendDice(chatId);
-      final value = (result['dice'] as Map)['value'];
+      final value = result.dice!.value;
       await bot.sendMessage(chatId, 'You rolled: $value');
     } else if (text == '/basketball') {
       await bot.sendDice(chatId, emoji: DiceEmoji.basketball);

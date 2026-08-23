@@ -33,7 +33,7 @@ Future<void> main() async {
       // You should ALWAYS answer callback queries, even with no arguments —
       // otherwise Telegram keeps showing a loading spinner on the button.
       await bot.answerCallbackQuery(
-        callback['id'] as String,
+        callback.id,
         text: 'You picked: $data', // shown as a small popup toast
       );
 

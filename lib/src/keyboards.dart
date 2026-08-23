@@ -1,4 +1,5 @@
 import 'core.dart';
+import 'enums.dart';
 
 /// Base type for anything you can pass to a message's `replyMarkup`
 /// parameter: an [InlineKeyboardMarkup], [ReplyKeyboardMarkup],
@@ -6,6 +7,89 @@ import 'core.dart';
 abstract class ReplyMarkup {
   /// Converts this markup to the JSON shape Telegram's API expects.
   Json toJson();
+}
+
+/// Configures a "Login with Telegram" button (see Telegram's [Login Widget
+/// docs](https://core.telegram.org/widgets/login)), used with
+/// [InlineKeyboardButton.loginUrl].
+class LoginUrl {
+  /// The URL opened after the user authorizes, with auth data appended as
+  /// query params (and validated per the login widget docs) or passed via
+  /// `tgAuthResult` in the fragment.
+  final String url;
+
+  /// The name shown to the user in the authorization prompt, if different
+  /// from the bot's.
+  final String? forwardText;
+
+  /// Username of a bot with a `domain` linked to [url]'s domain, if
+  /// different from the bot sending the button.
+  final String? botUsername;
+
+  /// Whether to request the user's permission to send them messages.
+  final bool? requestWriteAccess;
+
+  /// Creates login URL parameters targeting [url].
+  const LoginUrl(
+    this.url, {
+    this.forwardText,
+    this.botUsername,
+    this.requestWriteAccess,
+  });
+
+  /// Converts this to the JSON shape Telegram's API expects.
+  Json toJson() => {
+        'url': url,
+        if (forwardText != null) 'forward_text': forwardText,
+        if (botUsername != null) 'bot_username': botUsername,
+        if (requestWriteAccess != null)
+          'request_write_access': requestWriteAccess,
+      };
+}
+
+/// Like [InlineKeyboardButton.switchInlineQuery], but restricted to
+/// specific chat types the user is prompted to pick from, used with
+/// [InlineKeyboardButton.switchInlineQueryChosenChat].
+class SwitchInlineQueryChosenChat {
+  /// The text inserted after `@yourbot` in the chosen chat's input field.
+  final String? query;
+
+  /// Whether private chats with users (non-bots) can be chosen.
+  final bool? allowUserChats;
+
+  /// Whether private chats with bots can be chosen.
+  final bool? allowBotChats;
+
+  /// Whether group and supergroup chats can be chosen.
+  final bool? allowGroupChats;
+
+  /// Whether channel chats can be chosen.
+  final bool? allowChannelChats;
+
+  /// The identifier of a prepared inline message (from
+  /// `Bot.savePreparedInlineMessage`) to share instead of [query], if set.
+  final String? preparedInlineMessageId;
+
+  /// Creates chosen-chat restrictions for a switch-inline-query button.
+  const SwitchInlineQueryChosenChat({
+    this.query,
+    this.allowUserChats,
+    this.allowBotChats,
+    this.allowGroupChats,
+    this.allowChannelChats,
+    this.preparedInlineMessageId,
+  });
+
+  /// Converts this to the JSON shape Telegram's API expects.
+  Json toJson() => {
+        if (query != null) 'query': query,
+        if (allowUserChats != null) 'allow_user_chats': allowUserChats,
+        if (allowBotChats != null) 'allow_bot_chats': allowBotChats,
+        if (allowGroupChats != null) 'allow_group_chats': allowGroupChats,
+        if (allowChannelChats != null) 'allow_channel_chats': allowChannelChats,
+        if (preparedInlineMessageId != null)
+          'prepared_inline_message_id': preparedInlineMessageId,
+      };
 }
 
 /// A single button inside an [InlineKeyboardMarkup].
@@ -30,8 +114,8 @@ class InlineKeyboardButton {
   /// Opens a Telegram Web App at this URL when tapped.
   final String? webAppUrl;
 
-  /// Configures a "Login with Telegram" button (see Telegram's Login Widget docs).
-  final Json? loginUrl;
+  /// Configures a "Login with Telegram" button.
+  final LoginUrl? loginUrl;
 
   /// Prompts the user to pick a chat, then inserts `@yourbot <query>` in its input field.
   final String? switchInlineQuery;
@@ -40,10 +124,10 @@ class InlineKeyboardButton {
   final String? switchInlineQueryCurrentChat;
 
   /// Like [switchInlineQuery], but restricted to specific chat types.
-  final Json? switchInlineQueryChosenChat;
+  final SwitchInlineQueryChosenChat? switchInlineQueryChosenChat;
 
   /// Copies this text to the user's clipboard when tapped.
-  final Json? copyText;
+  final String? copyText;
 
   /// Marks this as the "Pay" button on an invoice message.
   final bool? pay;
@@ -79,19 +163,24 @@ class InlineKeyboardButton {
   factory InlineKeyboardButton.pay(String text) =>
       InlineKeyboardButton(text: text, pay: true);
 
+  /// A button that copies [copyText] to the user's clipboard when tapped.
+  factory InlineKeyboardButton.copy(String text, String copyText) =>
+      InlineKeyboardButton(text: text, copyText: copyText);
+
   /// Converts this button to the JSON shape Telegram's API expects.
   Json toJson() => {
         'text': text,
         if (url != null) 'url': url,
         if (callbackData != null) 'callback_data': callbackData,
         if (webAppUrl != null) 'web_app': {'url': webAppUrl},
-        if (loginUrl != null) 'login_url': loginUrl,
+        if (loginUrl != null) 'login_url': loginUrl!.toJson(),
         if (switchInlineQuery != null) 'switch_inline_query': switchInlineQuery,
         if (switchInlineQueryCurrentChat != null)
           'switch_inline_query_current_chat': switchInlineQueryCurrentChat,
         if (switchInlineQueryChosenChat != null)
-          'switch_inline_query_chosen_chat': switchInlineQueryChosenChat,
-        if (copyText != null) 'copy_text': copyText,
+          'switch_inline_query_chosen_chat':
+              switchInlineQueryChosenChat!.toJson(),
+        if (copyText != null) 'copy_text': {'text': copyText},
         if (pay != null) 'pay': pay,
       };
 }
@@ -126,6 +215,140 @@ class InlineKeyboardMarkup implements ReplyMarkup {
       };
 }
 
+/// Configures a poll-request [KeyboardButton] — tapping it asks the user to
+/// create and send a poll, optionally restricted to a [type].
+class KeyboardButtonPollType {
+  /// Restricts the poll to `'quiz'` or `'regular'`; leave `null` to let the
+  /// user choose either.
+  final PollType? type;
+
+  /// Creates poll-request parameters, optionally restricted to [type].
+  const KeyboardButtonPollType({this.type});
+
+  /// Converts this to the JSON shape Telegram's API expects.
+  Json toJson() => {if (type != null) 'type': type!.value};
+}
+
+/// Configures a users-request [KeyboardButton] — tapping it opens a list for
+/// the user to pick one or more users to share with the bot.
+class KeyboardButtonRequestUsers {
+  /// Identifier for this request, reused in the `UsersShared` service
+  /// message so you can tell multiple such buttons apart.
+  final int requestId;
+
+  /// Restricts picking to bot accounts (`true`) or non-bot users (`false`); unset allows either.
+  final bool? userIsBot;
+
+  /// Restricts picking to Telegram Premium users (`true`) or non-Premium
+  /// users (`false`); unset allows either.
+  final bool? userIsPremium;
+
+  /// Maximum number of users that can be picked at once (1-10, default 1).
+  final int? maxQuantity;
+
+  /// Whether to include each picked user's first/last name in the result.
+  final bool? requestName;
+
+  /// Whether to include each picked user's `@username` in the result.
+  final bool? requestUsername;
+
+  /// Whether to include each picked user's profile photo in the result.
+  final bool? requestPhoto;
+
+  /// Creates users-request parameters, identified by [requestId].
+  const KeyboardButtonRequestUsers(
+    this.requestId, {
+    this.userIsBot,
+    this.userIsPremium,
+    this.maxQuantity,
+    this.requestName,
+    this.requestUsername,
+    this.requestPhoto,
+  });
+
+  /// Converts this to the JSON shape Telegram's API expects.
+  Json toJson() => {
+        'request_id': requestId,
+        if (userIsBot != null) 'user_is_bot': userIsBot,
+        if (userIsPremium != null) 'user_is_premium': userIsPremium,
+        if (maxQuantity != null) 'max_quantity': maxQuantity,
+        if (requestName != null) 'request_name': requestName,
+        if (requestUsername != null) 'request_username': requestUsername,
+        if (requestPhoto != null) 'request_photo': requestPhoto,
+      };
+}
+
+/// Configures a chat-request [KeyboardButton] — tapping it opens a list for
+/// the user to pick a chat to share with the bot.
+class KeyboardButtonRequestChat {
+  /// Identifier for this request, reused in the `ChatShared` service
+  /// message so you can tell multiple such buttons apart.
+  final int requestId;
+
+  /// Restricts picking to channels (`true`) or non-channel chats (`false`); unset allows either.
+  final bool chatIsChannel;
+
+  /// Restricts picking to forum-enabled chats (`true`) or non-forum chats (`false`); unset allows either.
+  final bool? chatIsForum;
+
+  /// Restricts to chats with (`true`) or without (`false`) a public username; unset allows either.
+  final bool? chatHasUsername;
+
+  /// Restricts picking to chats owned by the requesting user.
+  final bool? chatIsCreated;
+
+  /// The specific admin rights the bot must have in the picked chat, as raw JSON.
+  final Json? botAdministratorRights;
+
+  /// The specific admin rights the user must have in the picked chat, as raw JSON.
+  final Json? userAdministratorRights;
+
+  /// Restricts picking to chats the bot is already a member of.
+  final bool? botIsMember;
+
+  /// Whether to include the picked chat's title in the result.
+  final bool? requestTitle;
+
+  /// Whether to include the picked chat's `@username` in the result.
+  final bool? requestUsername;
+
+  /// Whether to include the picked chat's photo in the result.
+  final bool? requestPhoto;
+
+  /// Creates chat-request parameters, identified by [requestId]. [chatIsChannel]
+  /// selects whether the picker offers channels or ordinary chats.
+  const KeyboardButtonRequestChat(
+    this.requestId,
+    this.chatIsChannel, {
+    this.chatIsForum,
+    this.chatHasUsername,
+    this.chatIsCreated,
+    this.botAdministratorRights,
+    this.userAdministratorRights,
+    this.botIsMember,
+    this.requestTitle,
+    this.requestUsername,
+    this.requestPhoto,
+  });
+
+  /// Converts this to the JSON shape Telegram's API expects.
+  Json toJson() => {
+        'request_id': requestId,
+        'chat_is_channel': chatIsChannel,
+        if (chatIsForum != null) 'chat_is_forum': chatIsForum,
+        if (chatHasUsername != null) 'chat_has_username': chatHasUsername,
+        if (chatIsCreated != null) 'chat_is_created': chatIsCreated,
+        if (botAdministratorRights != null)
+          'bot_administrator_rights': botAdministratorRights,
+        if (userAdministratorRights != null)
+          'user_administrator_rights': userAdministratorRights,
+        if (botIsMember != null) 'bot_is_member': botIsMember,
+        if (requestTitle != null) 'request_title': requestTitle,
+        if (requestUsername != null) 'request_username': requestUsername,
+        if (requestPhoto != null) 'request_photo': requestPhoto,
+      };
+}
+
 /// A single button inside a [ReplyKeyboardMarkup] (the custom keyboard that
 /// replaces the device's own keyboard, as opposed to an inline keyboard).
 class KeyboardButton {
@@ -139,13 +362,13 @@ class KeyboardButton {
   final bool? requestLocation;
 
   /// If set, tapping the button asks the user to create and send a poll.
-  final Json? requestPoll;
+  final KeyboardButtonPollType? requestPoll;
 
   /// If set, tapping the button opens a list for the user to pick one or more users to share.
-  final Json? requestUsers;
+  final KeyboardButtonRequestUsers? requestUsers;
 
   /// If set, tapping the button opens a list for the user to pick a chat to share.
-  final Json? requestChat;
+  final KeyboardButtonRequestChat? requestChat;
 
   /// If set, tapping the button opens a Telegram Web App at this URL instead of sending a message.
   final String? webAppUrl;
@@ -168,9 +391,9 @@ class KeyboardButton {
         'text': text,
         if (requestContact != null) 'request_contact': requestContact,
         if (requestLocation != null) 'request_location': requestLocation,
-        if (requestPoll != null) 'request_poll': requestPoll,
-        if (requestUsers != null) 'request_users': requestUsers,
-        if (requestChat != null) 'request_chat': requestChat,
+        if (requestPoll != null) 'request_poll': requestPoll!.toJson(),
+        if (requestUsers != null) 'request_users': requestUsers!.toJson(),
+        if (requestChat != null) 'request_chat': requestChat!.toJson(),
         if (webAppUrl != null) 'web_app': {'url': webAppUrl},
       };
 }

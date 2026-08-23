@@ -69,12 +69,12 @@ Future<void> main() async {
         ),
         InputMediaPhoto(InputFile.url('https://picsum.photos/seed/3/600')),
       ]);
-    } else if (update.message?['photo'] != null) {
+    } else if (update.message?.photo != null) {
       // The user sent us a photo — Telegram gives several resolutions;
       // the last one in the list is the largest.
-      final sizes = update.message!['photo'] as List;
-      final largest = sizes.last as Map<String, dynamic>;
-      final fileId = largest['file_id'] as String;
+      final sizes = update.message!.photo!;
+      final largest = sizes.last;
+      final fileId = largest.fileId;
 
       // Download the actual bytes of that photo.
       final bytes = await bot.downloadFileById(fileId);

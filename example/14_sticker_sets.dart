@@ -47,7 +47,7 @@ Future<void> main() async {
     InputFile.path(stickerImagePath),
     StickerFormat.static,
   );
-  final fileId = uploaded['file_id'] as String;
+  final fileId = uploaded.fileId;
   log('Uploaded sticker file: $fileId');
 
   // Step 2: create the set using that file_id. Every sticker needs at least
@@ -75,8 +75,7 @@ Future<void> main() async {
   // The set can now be sent like any other sticker set. `getStickerSet`
   // returns its stickers (each with its own file_id) if you need them.
   final set = await bot.getStickerSet(setName);
-  final firstStickerFileId =
-      (set['stickers'] as List).first['file_id'] as String;
+  final firstStickerFileId = set.stickers.first.fileId;
 
   await for (final update in bot.poll()) {
     final chatId = update.chatId;

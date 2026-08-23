@@ -42,7 +42,7 @@ Future<void> main() async {
       );
       await bot.sendMessage(
         chatId,
-        'Subscription link: ${link['invite_link']}',
+        'Subscription link: ${link.inviteLink}',
       );
     } else if (text.startsWith('/rename_link ')) {
       final inviteLink = text.substring('/rename_link '.length).trim();

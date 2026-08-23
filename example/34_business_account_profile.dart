@@ -32,8 +32,7 @@ Future<void> main() async {
   await for (final update in bot.poll()) {
     final chatId = update.chatId;
     final text = update.text;
-    final businessConnectionId =
-        update.businessConnection?['id'] as String?;
+    final businessConnectionId = update.businessConnection?.id;
     if (chatId == null || text == null) continue;
 
     if (businessConnectionId == null) {

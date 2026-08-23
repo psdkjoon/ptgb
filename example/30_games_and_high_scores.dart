@@ -57,9 +57,7 @@ Future<void> main() async {
           'No scores recorded yet — try /score <number> first.',
         );
       } else {
-        final lines = scores
-            .map(GameHighScore.new)
-            .map((s) => '${s.user.firstName}: ${s.score}');
+        final lines = scores.map((s) => '${s.user.firstName}: ${s.score}');
         await bot.sendMessage(chatId, 'Leaderboard:\n${lines.join('\n')}');
       }
     } else {

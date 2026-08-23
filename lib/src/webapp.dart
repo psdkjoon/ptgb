@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 import 'core.dart';
+import 'models.dart';
 
 /// The parsed, signature-verified `initData` string sent by a Telegram Mini
 /// App, as returned by [Bot.verifyWebAppInitData].
@@ -21,13 +22,13 @@ class WebAppInitData {
   const WebAppInitData(this.fields, this.isValid);
 
   /// The Telegram user who opened the Mini App, if present.
-  Json? get user => _decodeJsonField('user');
+  User? get user => _wrap('user', User.new);
 
   /// The user the Mini App's message will be sent to, if applicable.
-  Json? get receiver => _decodeJsonField('receiver');
+  User? get receiver => _wrap('receiver', User.new);
 
   /// The chat the Mini App was opened from, if applicable.
-  Json? get chat => _decodeJsonField('chat');
+  Chat? get chat => _wrap('chat', Chat.new);
 
   /// The type of chat the Mini App was opened from (`'sender'`, `'private'`, `'group'`, etc).
   String? get chatType => fields['chat_type'] as String?;
@@ -61,10 +62,10 @@ class WebAppInitData {
   /// The Ed25519 signature of the data, an alternative to the HMAC [isValid] check.
   String? get signature => fields['signature'] as String?;
 
-  Json? _decodeJsonField(String key) {
+  T? _wrap<T>(String key, T Function(Json) wrap) {
     final raw = fields[key];
     if (raw == null) return null;
-    return jsonDecode(raw as String) as Json;
+    return wrap(jsonDecode(raw as String) as Json);
   }
 }
 

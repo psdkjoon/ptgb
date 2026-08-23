@@ -29,8 +29,7 @@ Future<void> main() async {
   await for (final update in bot.poll()) {
     final chatId = update.chatId;
     final text = update.text;
-    final businessConnectionId =
-        update.businessConnection?['id'] as String?;
+    final businessConnectionId = update.businessConnection?.id;
     if (chatId == null || text == null || businessConnectionId == null)
       continue;
 
@@ -43,7 +42,7 @@ Future<void> main() async {
         24 * 3600,
         caption: 'Posted via ptgb!',
       );
-      await bot.sendMessage(chatId, 'Story posted: ${story['id']}');
+      await bot.sendMessage(chatId, 'Story posted: ${story.id}');
     } else if (text.startsWith('/edit_story ')) {
       final storyId = int.parse(text.substring('/edit_story '.length));
       await bot.editStory(

@@ -1,8 +1,9 @@
 /// A convenient alias for the JSON object shape used throughout `ptgb`.
 ///
-/// Every Telegram Bot API request and response body is a JSON object, so
-/// this package represents most raw API results as `Json` instead of
-/// modeling every single Telegram type as its own Dart class.
+/// Every Telegram Bot API request and response body is a JSON object.
+/// `ptgb`'s typed wrapper classes (like [Message] and [Update]) read from
+/// and are constructed around a `Json` — it stays available as `.raw` on
+/// every wrapper, and is used directly wherever no typed wrapper exists yet.
 typedef Json = Map<String, dynamic>;
 
 /// Thrown whenever the Telegram Bot API responds with `"ok": false`.

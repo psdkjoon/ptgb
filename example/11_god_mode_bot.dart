@@ -75,10 +75,10 @@ Future<void> main() async {
         await _handleInlineQuery(bot, update);
       } else if (update.preCheckoutQuery != null) {
         await bot.answerPreCheckoutQuery(
-          update.preCheckoutQuery!['id'] as String,
+          update.preCheckoutQuery!.id,
           true,
         );
-      } else if (update.message?['successful_payment'] != null) {
+      } else if (update.message?.successfulPayment != null) {
         await bot.sendMessage(update.chatId!, '✅ Payment received, thank you!');
       } else if (update.text != null) {
         await _handleCommand(bot, update);
@@ -121,7 +121,7 @@ Future<void> _handleCommand(Bot bot, Update update) async {
         'Count: 0',
         replyMarkup: _counterKeyboard(),
       );
-      _counters['$chatId:${sent['message_id']}'] = 0;
+      _counters['$chatId:${sent.messageId}'] = 0;
 
     case '/photo':
       // Show a "sending photo..." indicator while we prepare the album.
@@ -194,16 +194,16 @@ Future<void> _handleCallback(Bot bot, Update update) async {
   final callback = update.callbackQuery!;
   final data = update.callbackData ?? '';
   final chatId = update.chatId!;
-  final messageId = (callback['message'] as Map)['message_id'] as int;
+  final messageId = callback.message!['message_id'] as int;
 
   // The main /menu screen re-dispatches to the same logic as the slash
   // commands, so tapping a button behaves identically to typing the command.
   if (data.startsWith('menu:')) {
-    await bot.answerCallbackQuery(callback['id'] as String);
+    await bot.answerCallbackQuery(callback.id);
     // Build a minimal synthetic "message" update carrying the button's
     // target command, so `_handleCommand` can handle it uniformly.
     final syntheticMessage = <String, dynamic>{
-      ...callback['message'] as Map<String, dynamic>,
+      ...callback.message!,
       'text': '/${data.substring(5)}',
     };
     await _handleCommand(
@@ -222,7 +222,7 @@ Future<void> _handleCallback(Bot bot, Update update) async {
       _ => 0,
     };
     _counters[key] = next;
-    await bot.answerCallbackQuery(callback['id'] as String);
+    await bot.answerCallbackQuery(callback.id);
     await bot.editMessageText(
       'Count: $next',
       chatId: chatId,
@@ -238,17 +238,15 @@ Future<void> _handleCallback(Bot bot, Update update) async {
 
 Future<void> _handleInlineQuery(Bot bot, Update update) async {
   final query = update.inlineQuery!;
-  final searchText = (query['query'] as String? ?? '').trim();
+  final searchText = query.query.trim();
 
-  await bot.answerInlineQuery(query['id'] as String, [
-    {
-      'type': 'article',
-      'id': '1',
-      'title': 'Send: "$searchText"',
-      'input_message_content': {
-        'message_text':
-            searchText.isEmpty ? 'Hello from god mode!' : searchText,
-      },
-    },
+  await bot.answerInlineQuery(query.id, [
+    InlineQueryResultArticle(
+      '1',
+      'Send: "$searchText"',
+      InputTextMessageContent(
+        searchText.isEmpty ? 'Hello from god mode!' : searchText,
+      ),
+    ),
   ]);
 }

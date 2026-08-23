@@ -32,7 +32,7 @@ Future<void> main() async {
 
     if (text == '/my_boosts') {
       final boosts = await bot.getUserChatBoosts(chatId, userId);
-      final count = (boosts['boosts'] as List).length;
+      final count = boosts.boosts.length;
       await bot.sendMessage(
         chatId,
         count == 0

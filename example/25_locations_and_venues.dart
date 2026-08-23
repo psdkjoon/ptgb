@@ -52,7 +52,7 @@ Future<void> main() async {
         13.3777,
         livePeriod: 300,
       );
-      final messageId = sent['message_id'] as int;
+      final messageId = sent.messageId;
 
       await bot.sendMessage(
         chatId,

@@ -12,6 +12,7 @@ import 'enums.dart';
 import 'http_client.dart';
 import 'input_file.dart';
 import 'input_media.dart';
+import 'inline_query_result.dart';
 import 'keyboards.dart';
 import 'models.dart';
 import 'permissions.dart';
@@ -28,6 +29,8 @@ export 'core.dart';
 export 'enums.dart';
 export 'input_file.dart';
 export 'input_media.dart';
+export 'input_message_content.dart';
+export 'inline_query_result.dart';
 export 'keyboards.dart';
 export 'models.dart';
 export 'permissions.dart';
@@ -42,6 +45,13 @@ List<Json> _l(dynamic r) => (r as List).cast<Json>();
 bool _b(dynamic r) => r as bool;
 int _i(dynamic r) => r as int;
 String _s(dynamic r) => r as String;
+
+/// Telegram's `editMessage*` family returns the edited [Message] when
+/// editing a normal message, or `true` when editing a message sent via an
+/// inline query result (identified only by `inlineMessageId`, which
+/// Telegram can't send a full message object back for). This normalizes
+/// that union into a single typed value.
+Object _msgOrBool(dynamic r) => r is Map ? Message(_o(r)) : _b(r);
 
 /// The main entry point of `ptgb` — a thin, fully-typed wrapper around every
 /// method of the [Telegram Bot API](https://core.telegram.org/bots/api).
@@ -143,7 +153,7 @@ class Bot {
   /// Returns basic information about the bot itself as a [User] object (in raw JSON form).
   ///
   /// Handy as a quick way to verify that [token] is valid.
-  Future<Json> getMe() async => _o(await call('getMe'));
+  Future<User> getMe() async => User(_o(await call('getMe')));
 
   /// Logs the bot out from the Bot API server before moving it to a local server instance.
   /// You generally never need this unless you're running your own Bot API server.
@@ -209,7 +219,8 @@ class Bot {
       );
 
   /// Returns the current webhook status (URL, pending update count, last error, etc).
-  Future<Json> getWebhookInfo() async => _o(await call('getWebhookInfo'));
+  Future<WebhookInfo> getWebhookInfo() async =>
+      WebhookInfo(_o(await call('getWebhookInfo')));
 
   /// Signals an in-progress [poll] stream to stop after its current iteration.
   void stopPolling() => _polling = false;
@@ -332,7 +343,7 @@ class Bot {
   /// immediately downloads its bytes in one call.
   Future<Uint8List> downloadFileById(String fileId) async {
     final file = await getFile(fileId);
-    return downloadFile(file['file_path'] as String);
+    return downloadFile(file.filePath!);
   }
 
   /// Sends a text message to [chatId].
@@ -340,7 +351,7 @@ class Bot {
   /// This is the most common method in the whole API. Use [parseMode] to enable
   /// Markdown/HTML formatting, [replyMarkup] to attach an inline/reply keyboard,
   /// and [replyParameters] to reply to an existing message.
-  Future<Json> sendMessage(
+  Future<Message> sendMessage(
     Object chatId,
     String text, {
     String? businessConnectionId,
@@ -356,29 +367,31 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendMessage', {
-          'chat_id': chatId,
-          'text': text,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (parseMode != null) 'parse_mode': parseMode.value,
-          if (entities != null) 'entities': entities,
-          if (linkPreviewOptions != null)
-            'link_preview_options': linkPreviewOptions.toJson(),
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson()
-          else if (replyToMessageId != null)
-            'reply_parameters': {'message_id': replyToMessageId},
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendMessage', {
+            'chat_id': chatId,
+            'text': text,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (parseMode != null) 'parse_mode': parseMode.value,
+            if (entities != null) 'entities': entities,
+            if (linkPreviewOptions != null)
+              'link_preview_options': linkPreviewOptions.toJson(),
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson()
+            else if (replyToMessageId != null)
+              'reply_parameters': {'message_id': replyToMessageId},
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Streams a partial message to [chatId] while it's still being generated
@@ -408,7 +421,7 @@ class Bot {
 
   /// Forwards a single existing message from [fromChatId] to [chatId], keeping
   /// the "Forwarded from" attribution.
-  Future<Json> forwardMessage(
+  Future<Message> forwardMessage(
     Object chatId,
     Object fromChatId,
     int messageId, {
@@ -416,20 +429,22 @@ class Bot {
     bool? disableNotification,
     bool? protectContent,
   }) async =>
-      _o(
-        await call('forwardMessage', {
-          'chat_id': chatId,
-          'from_chat_id': fromChatId,
-          'message_id': messageId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-        }),
+      Message(
+        _o(
+          await call('forwardMessage', {
+            'chat_id': chatId,
+            'from_chat_id': fromChatId,
+            'message_id': messageId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+          }),
+        ),
       );
 
   /// Forwards a batch of messages ([messageIds]) from [fromChatId] to [chatId] in one call.
-  Future<List<Json>> forwardMessages(
+  Future<List<Message>> forwardMessages(
     Object chatId,
     Object fromChatId,
     List<int> messageIds, {
@@ -447,12 +462,12 @@ class Bot {
             'disable_notification': disableNotification,
           if (protectContent != null) 'protect_content': protectContent,
         }),
-      );
+      ).map(Message.new).toList();
 
   /// Copies a message from [fromChatId] to [chatId] *without* the "Forwarded
   /// from" header, as if you wrote it yourself. Media, captions, and reply
   /// markup are preserved.
-  Future<Json> copyMessage(
+  Future<MessageId> copyMessage(
     Object chatId,
     Object fromChatId,
     int messageId, {
@@ -467,30 +482,32 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('copyMessage', {
-          'chat_id': chatId,
-          'from_chat_id': fromChatId,
-          'message_id': messageId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (caption != null) 'caption': caption,
-          if (parseMode != null) 'parse_mode': parseMode.value,
-          if (captionEntities != null) 'caption_entities': captionEntities,
-          if (showCaptionAboveMedia != null)
-            'show_caption_above_media': showCaptionAboveMedia,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      MessageId(
+        _o(
+          await call('copyMessage', {
+            'chat_id': chatId,
+            'from_chat_id': fromChatId,
+            'message_id': messageId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (caption != null) 'caption': caption,
+            if (parseMode != null) 'parse_mode': parseMode.value,
+            if (captionEntities != null) 'caption_entities': captionEntities,
+            if (showCaptionAboveMedia != null)
+              'show_caption_above_media': showCaptionAboveMedia,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Copies a batch of messages ([messageIds]) from [fromChatId] to [chatId] in one call.
-  Future<List<Json>> copyMessages(
+  Future<List<MessageId>> copyMessages(
     Object chatId,
     Object fromChatId,
     List<int> messageIds, {
@@ -510,11 +527,11 @@ class Bot {
           if (protectContent != null) 'protect_content': protectContent,
           if (removeCaption != null) 'remove_caption': removeCaption,
         }),
-      );
+      ).map(MessageId.new).toList();
 
   /// Sends a photo. [photo] accepts a `file_id`, a URL, or a local upload via
   /// [InputFile.path]/[InputFile.bytes].
-  Future<Json> sendPhoto(
+  Future<Message> sendPhoto(
     Object chatId,
     InputFile photo, {
     String? businessConnectionId,
@@ -531,38 +548,40 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call(
-          'sendPhoto',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (caption != null) 'caption': caption,
-            if (parseMode != null) 'parse_mode': parseMode.value,
-            if (captionEntities != null) 'caption_entities': captionEntities,
-            if (showCaptionAboveMedia != null)
-              'show_caption_above_media': showCaptionAboveMedia,
-            if (hasSpoiler != null) 'has_spoiler': hasSpoiler,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-          },
-          {'photo': photo},
+      Message(
+        _o(
+          await call(
+            'sendPhoto',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (caption != null) 'caption': caption,
+              if (parseMode != null) 'parse_mode': parseMode.value,
+              if (captionEntities != null) 'caption_entities': captionEntities,
+              if (showCaptionAboveMedia != null)
+                'show_caption_above_media': showCaptionAboveMedia,
+              if (hasSpoiler != null) 'has_spoiler': hasSpoiler,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+            },
+            {'photo': photo},
+          ),
         ),
       );
 
   /// Sends an audio file that Telegram will display with a music player UI.
   /// Use [sendVoice] instead for voice-message-style recordings, or
   /// [sendDocument] for arbitrary audio files you don't want played inline.
-  Future<Json> sendAudio(
+  Future<Message> sendAudio(
     Object chatId,
     InputFile audio, {
     String? businessConnectionId,
@@ -581,36 +600,38 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call(
-          'sendAudio',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (caption != null) 'caption': caption,
-            if (parseMode != null) 'parse_mode': parseMode.value,
-            if (captionEntities != null) 'caption_entities': captionEntities,
-            if (duration != null) 'duration': duration,
-            if (performer != null) 'performer': performer,
-            if (title != null) 'title': title,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-          },
-          {'audio': audio, if (thumbnail != null) 'thumbnail': thumbnail},
+      Message(
+        _o(
+          await call(
+            'sendAudio',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (caption != null) 'caption': caption,
+              if (parseMode != null) 'parse_mode': parseMode.value,
+              if (captionEntities != null) 'caption_entities': captionEntities,
+              if (duration != null) 'duration': duration,
+              if (performer != null) 'performer': performer,
+              if (title != null) 'title': title,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+            },
+            {'audio': audio, if (thumbnail != null) 'thumbnail': thumbnail},
+          ),
         ),
       );
 
   /// Sends a general file/document of any type.
-  Future<Json> sendDocument(
+  Future<Message> sendDocument(
     Object chatId,
     InputFile document, {
     String? businessConnectionId,
@@ -627,35 +648,40 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call(
-          'sendDocument',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (caption != null) 'caption': caption,
-            if (parseMode != null) 'parse_mode': parseMode.value,
-            if (captionEntities != null) 'caption_entities': captionEntities,
-            if (disableContentTypeDetection != null)
-              'disable_content_type_detection': disableContentTypeDetection,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-          },
-          {'document': document, if (thumbnail != null) 'thumbnail': thumbnail},
+      Message(
+        _o(
+          await call(
+            'sendDocument',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (caption != null) 'caption': caption,
+              if (parseMode != null) 'parse_mode': parseMode.value,
+              if (captionEntities != null) 'caption_entities': captionEntities,
+              if (disableContentTypeDetection != null)
+                'disable_content_type_detection': disableContentTypeDetection,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+            },
+            {
+              'document': document,
+              if (thumbnail != null) 'thumbnail': thumbnail
+            },
+          ),
         ),
       );
 
   /// Sends a video that Telegram can play inline in the chat.
-  Future<Json> sendVideo(
+  Future<Message> sendVideo(
     Object chatId,
     InputFile video, {
     String? businessConnectionId,
@@ -677,41 +703,43 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call(
-          'sendVideo',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (duration != null) 'duration': duration,
-            if (width != null) 'width': width,
-            if (height != null) 'height': height,
-            if (caption != null) 'caption': caption,
-            if (parseMode != null) 'parse_mode': parseMode.value,
-            if (captionEntities != null) 'caption_entities': captionEntities,
-            if (showCaptionAboveMedia != null)
-              'show_caption_above_media': showCaptionAboveMedia,
-            if (hasSpoiler != null) 'has_spoiler': hasSpoiler,
-            if (supportsStreaming != null)
-              'supports_streaming': supportsStreaming,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-          },
-          {'video': video, if (thumbnail != null) 'thumbnail': thumbnail},
+      Message(
+        _o(
+          await call(
+            'sendVideo',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (duration != null) 'duration': duration,
+              if (width != null) 'width': width,
+              if (height != null) 'height': height,
+              if (caption != null) 'caption': caption,
+              if (parseMode != null) 'parse_mode': parseMode.value,
+              if (captionEntities != null) 'caption_entities': captionEntities,
+              if (showCaptionAboveMedia != null)
+                'show_caption_above_media': showCaptionAboveMedia,
+              if (hasSpoiler != null) 'has_spoiler': hasSpoiler,
+              if (supportsStreaming != null)
+                'supports_streaming': supportsStreaming,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+            },
+            {'video': video, if (thumbnail != null) 'thumbnail': thumbnail},
+          ),
         ),
       );
 
   /// Sends an animation (GIF or silent, looping MP4).
-  Future<Json> sendAnimation(
+  Future<Message> sendAnimation(
     Object chatId,
     InputFile animation, {
     String? businessConnectionId,
@@ -732,44 +760,46 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call(
-          'sendAnimation',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (duration != null) 'duration': duration,
-            if (width != null) 'width': width,
-            if (height != null) 'height': height,
-            if (caption != null) 'caption': caption,
-            if (parseMode != null) 'parse_mode': parseMode.value,
-            if (captionEntities != null) 'caption_entities': captionEntities,
-            if (showCaptionAboveMedia != null)
-              'show_caption_above_media': showCaptionAboveMedia,
-            if (hasSpoiler != null) 'has_spoiler': hasSpoiler,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-          },
-          {
-            'animation': animation,
-            if (thumbnail != null) 'thumbnail': thumbnail,
-          },
+      Message(
+        _o(
+          await call(
+            'sendAnimation',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (duration != null) 'duration': duration,
+              if (width != null) 'width': width,
+              if (height != null) 'height': height,
+              if (caption != null) 'caption': caption,
+              if (parseMode != null) 'parse_mode': parseMode.value,
+              if (captionEntities != null) 'caption_entities': captionEntities,
+              if (showCaptionAboveMedia != null)
+                'show_caption_above_media': showCaptionAboveMedia,
+              if (hasSpoiler != null) 'has_spoiler': hasSpoiler,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+            },
+            {
+              'animation': animation,
+              if (thumbnail != null) 'thumbnail': thumbnail,
+            },
+          ),
         ),
       );
 
   /// Sends a voice-message-style audio clip (displayed with a waveform in the
   /// Telegram UI). The file must be an .ogg encoded with the OPUS codec, or
   /// another format Telegram can automatically convert.
-  Future<Json> sendVoice(
+  Future<Message> sendVoice(
     Object chatId,
     InputFile voice, {
     String? businessConnectionId,
@@ -785,35 +815,37 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call(
-          'sendVoice',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (caption != null) 'caption': caption,
-            if (parseMode != null) 'parse_mode': parseMode.value,
-            if (captionEntities != null) 'caption_entities': captionEntities,
-            if (duration != null) 'duration': duration,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-          },
-          {'voice': voice},
+      Message(
+        _o(
+          await call(
+            'sendVoice',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (caption != null) 'caption': caption,
+              if (parseMode != null) 'parse_mode': parseMode.value,
+              if (captionEntities != null) 'caption_entities': captionEntities,
+              if (duration != null) 'duration': duration,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+            },
+            {'voice': voice},
+          ),
         ),
       );
 
   /// Sends a round "video note" message (the circular video bubbles seen in
   /// Telegram chats). Telegram only supports square, i.e. `width == height`, video notes.
-  Future<Json> sendVideoNote(
+  Future<Message> sendVideoNote(
     Object chatId,
     InputFile videoNote, {
     String? businessConnectionId,
@@ -828,36 +860,38 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call(
-          'sendVideoNote',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (duration != null) 'duration': duration,
-            if (length != null) 'length': length,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-          },
-          {
-            'video_note': videoNote,
-            if (thumbnail != null) 'thumbnail': thumbnail,
-          },
+      Message(
+        _o(
+          await call(
+            'sendVideoNote',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (duration != null) 'duration': duration,
+              if (length != null) 'length': length,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+            },
+            {
+              'video_note': videoNote,
+              if (thumbnail != null) 'thumbnail': thumbnail,
+            },
+          ),
         ),
       );
 
   /// Sends an album of 2-10 photos/videos/documents/audio files grouped
   /// together as a single message using a list of [InputMedia] items.
-  Future<List<Json>> sendMediaGroup(
+  Future<List<Message>> sendMediaGroup(
     Object chatId,
     List<InputMedia> media, {
     String? businessConnectionId,
@@ -913,13 +947,13 @@ class Bot {
         },
         files,
       ),
-    );
+    ).map(Message.new).toList();
   }
 
   /// Sends paid media (photos/videos) that chat members must pay [starCount]
   /// Telegram Stars to unlock. Star proceeds are credited to the channel's
   /// balance if [chatId] is a channel, or to the bot's balance otherwise.
-  Future<Json> sendPaidMedia(
+  Future<Message> sendPaidMedia(
     Object chatId,
     int starCount,
     List<InputPaidMedia> media, {
@@ -960,38 +994,40 @@ class Bot {
       mediaJson.add(item.toJson(mediaRef, thumbRef: thumbRef));
     }
 
-    return _o(
-      await call(
-        'sendPaidMedia',
-        {
-          'chat_id': chatId,
-          'star_count': starCount,
-          'media': mediaJson,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (payload != null) 'payload': payload,
-          if (caption != null) 'caption': caption,
-          if (parseMode != null) 'parse_mode': parseMode.value,
-          if (captionEntities != null) 'caption_entities': captionEntities,
-          if (showCaptionAboveMedia != null)
-            'show_caption_above_media': showCaptionAboveMedia,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        },
-        files,
+    return Message(
+      _o(
+        await call(
+          'sendPaidMedia',
+          {
+            'chat_id': chatId,
+            'star_count': starCount,
+            'media': mediaJson,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (payload != null) 'payload': payload,
+            if (caption != null) 'caption': caption,
+            if (parseMode != null) 'parse_mode': parseMode.value,
+            if (captionEntities != null) 'caption_entities': captionEntities,
+            if (showCaptionAboveMedia != null)
+              'show_caption_above_media': showCaptionAboveMedia,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          },
+          files,
+        ),
       ),
     );
   }
 
   /// Sends a point on the map. Set [livePeriod] to share a live, periodically
   /// updating location instead of a static point.
-  Future<Json> sendLocation(
+  Future<Message> sendLocation(
     Object chatId,
     double latitude,
     double longitude, {
@@ -1008,34 +1044,36 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendLocation', {
-          'chat_id': chatId,
-          'latitude': latitude,
-          'longitude': longitude,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (horizontalAccuracy != null)
-            'horizontal_accuracy': horizontalAccuracy,
-          if (livePeriod != null) 'live_period': livePeriod,
-          if (heading != null) 'heading': heading,
-          if (proximityAlertRadius != null)
-            'proximity_alert_radius': proximityAlertRadius,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendLocation', {
+            'chat_id': chatId,
+            'latitude': latitude,
+            'longitude': longitude,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (horizontalAccuracy != null)
+              'horizontal_accuracy': horizontalAccuracy,
+            if (livePeriod != null) 'live_period': livePeriod,
+            if (heading != null) 'heading': heading,
+            if (proximityAlertRadius != null)
+              'proximity_alert_radius': proximityAlertRadius,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Sends information about a venue (a location plus a name and address).
-  Future<Json> sendVenue(
+  Future<Message> sendVenue(
     Object chatId,
     double latitude,
     double longitude,
@@ -1054,34 +1092,36 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendVenue', {
-          'chat_id': chatId,
-          'latitude': latitude,
-          'longitude': longitude,
-          'title': title,
-          'address': address,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (foursquareId != null) 'foursquare_id': foursquareId,
-          if (foursquareType != null) 'foursquare_type': foursquareType,
-          if (googlePlaceId != null) 'google_place_id': googlePlaceId,
-          if (googlePlaceType != null) 'google_place_type': googlePlaceType,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendVenue', {
+            'chat_id': chatId,
+            'latitude': latitude,
+            'longitude': longitude,
+            'title': title,
+            'address': address,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (foursquareId != null) 'foursquare_id': foursquareId,
+            if (foursquareType != null) 'foursquare_type': foursquareType,
+            if (googlePlaceId != null) 'google_place_id': googlePlaceId,
+            if (googlePlaceType != null) 'google_place_type': googlePlaceType,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Sends a phone contact card.
-  Future<Json> sendContact(
+  Future<Message> sendContact(
     Object chatId,
     String phoneNumber,
     String firstName, {
@@ -1096,31 +1136,33 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendContact', {
-          'chat_id': chatId,
-          'phone_number': phoneNumber,
-          'first_name': firstName,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (lastName != null) 'last_name': lastName,
-          if (vcard != null) 'vcard': vcard,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendContact', {
+            'chat_id': chatId,
+            'phone_number': phoneNumber,
+            'first_name': firstName,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (lastName != null) 'last_name': lastName,
+            if (vcard != null) 'vcard': vcard,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Sends a native Telegram poll or quiz. Use [type] set to `PollType.quiz` for
   /// a quiz poll and provide [correctOptionId].
-  Future<Json> sendPoll(
+  Future<Message> sendPoll(
     Object chatId,
     String question,
     List<String> options, {
@@ -1144,43 +1186,45 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendPoll', {
-          'chat_id': chatId,
-          'question': question,
-          'options': options.map((o) => {'text': o}).toList(),
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (questionEntities != null) 'question_entities': questionEntities,
-          if (isAnonymous != null) 'is_anonymous': isAnonymous,
-          if (type != null) 'type': type.value,
-          if (allowsMultipleAnswers != null)
-            'allows_multiple_answers': allowsMultipleAnswers,
-          if (correctOptionId != null) 'correct_option_id': correctOptionId,
-          if (explanation != null) 'explanation': explanation,
-          if (explanationParseMode != null)
-            'explanation_parse_mode': explanationParseMode.value,
-          if (explanationEntities != null)
-            'explanation_entities': explanationEntities,
-          if (openPeriod != null) 'open_period': openPeriod,
-          if (closeDate != null) 'close_date': closeDate,
-          if (isClosed != null) 'is_closed': isClosed,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendPoll', {
+            'chat_id': chatId,
+            'question': question,
+            'options': options.map((o) => {'text': o}).toList(),
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (questionEntities != null) 'question_entities': questionEntities,
+            if (isAnonymous != null) 'is_anonymous': isAnonymous,
+            if (type != null) 'type': type.value,
+            if (allowsMultipleAnswers != null)
+              'allows_multiple_answers': allowsMultipleAnswers,
+            if (correctOptionId != null) 'correct_option_id': correctOptionId,
+            if (explanation != null) 'explanation': explanation,
+            if (explanationParseMode != null)
+              'explanation_parse_mode': explanationParseMode.value,
+            if (explanationEntities != null)
+              'explanation_entities': explanationEntities,
+            if (openPeriod != null) 'open_period': openPeriod,
+            if (closeDate != null) 'close_date': closeDate,
+            if (isClosed != null) 'is_closed': isClosed,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Sends an animated dice-style emoji (dice, dart, basketball, etc). Telegram
   /// computes the result server-side, unlike a plain emoji message.
-  Future<Json> sendDice(
+  Future<Message> sendDice(
     Object chatId, {
     String? businessConnectionId,
     int? messageThreadId,
@@ -1192,23 +1236,25 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendDice', {
-          'chat_id': chatId,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (emoji != null) 'emoji': emoji.value,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendDice', {
+            'chat_id': chatId,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (emoji != null) 'emoji': emoji.value,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Shows a transient status indicator such as "Bot is typing..." in the chat.
@@ -1250,7 +1296,11 @@ class Bot {
   /// Edits the text of a previously sent message. Provide [chatId] and
   /// [messageId] for bot-sent messages, or [inlineMessageId] when editing a
   /// message that came from an inline query result.
-  Future<dynamic> editMessageText(
+  ///
+  /// Returns the edited [Message], or `true` when editing an inline
+  /// message identified only by [inlineMessageId] (Telegram doesn't send a
+  /// full message object back in that case).
+  Future<Object> editMessageText(
     String text, {
     String? businessConnectionId,
     Object? chatId,
@@ -1260,23 +1310,28 @@ class Bot {
     List<Json>? entities,
     LinkPreviewOptions? linkPreviewOptions,
     InlineKeyboardMarkup? replyMarkup,
-  }) =>
-      call('editMessageText', {
-        'text': text,
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (chatId != null) 'chat_id': chatId,
-        if (messageId != null) 'message_id': messageId,
-        if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
-        if (parseMode != null) 'parse_mode': parseMode.value,
-        if (entities != null) 'entities': entities,
-        if (linkPreviewOptions != null)
-          'link_preview_options': linkPreviewOptions.toJson(),
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      });
+  }) async =>
+      _msgOrBool(
+        await call('editMessageText', {
+          'text': text,
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (chatId != null) 'chat_id': chatId,
+          if (messageId != null) 'message_id': messageId,
+          if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
+          if (parseMode != null) 'parse_mode': parseMode.value,
+          if (entities != null) 'entities': entities,
+          if (linkPreviewOptions != null)
+            'link_preview_options': linkPreviewOptions.toJson(),
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        }),
+      );
 
   /// Edits the caption of a message that has media attached.
-  Future<dynamic> editMessageCaption({
+  ///
+  /// Returns the edited [Message], or `true` when editing an inline
+  /// message identified only by [inlineMessageId].
+  Future<Object> editMessageCaption({
     String? businessConnectionId,
     Object? chatId,
     int? messageId,
@@ -1286,23 +1341,28 @@ class Bot {
     List<Json>? captionEntities,
     bool? showCaptionAboveMedia,
     InlineKeyboardMarkup? replyMarkup,
-  }) =>
-      call('editMessageCaption', {
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (chatId != null) 'chat_id': chatId,
-        if (messageId != null) 'message_id': messageId,
-        if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
-        if (caption != null) 'caption': caption,
-        if (parseMode != null) 'parse_mode': parseMode.value,
-        if (captionEntities != null) 'caption_entities': captionEntities,
-        if (showCaptionAboveMedia != null)
-          'show_caption_above_media': showCaptionAboveMedia,
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      });
+  }) async =>
+      _msgOrBool(
+        await call('editMessageCaption', {
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (chatId != null) 'chat_id': chatId,
+          if (messageId != null) 'message_id': messageId,
+          if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
+          if (caption != null) 'caption': caption,
+          if (parseMode != null) 'parse_mode': parseMode.value,
+          if (captionEntities != null) 'caption_entities': captionEntities,
+          if (showCaptionAboveMedia != null)
+            'show_caption_above_media': showCaptionAboveMedia,
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        }),
+      );
 
   /// Replaces the media (photo/video/etc) of an existing message with [media].
-  Future<dynamic> editMessageMedia(
+  ///
+  /// Returns the edited [Message], or `true` when editing an inline
+  /// message identified only by [inlineMessageId].
+  Future<Object> editMessageMedia(
     InputMedia media, {
     String? businessConnectionId,
     Object? chatId,
@@ -1328,24 +1388,29 @@ class Bot {
       }
     }
 
-    return call(
-      'editMessageMedia',
-      {
-        'media': media.toJson(mediaRef, thumbRef: thumbRef),
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (chatId != null) 'chat_id': chatId,
-        if (messageId != null) 'message_id': messageId,
-        if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      },
-      files,
+    return _msgOrBool(
+      await call(
+        'editMessageMedia',
+        {
+          'media': media.toJson(mediaRef, thumbRef: thumbRef),
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (chatId != null) 'chat_id': chatId,
+          if (messageId != null) 'message_id': messageId,
+          if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        },
+        files,
+      ),
     );
   }
 
   /// Updates the coordinates of an in-progress live location started with
   /// [sendLocation]'s `livePeriod`.
-  Future<dynamic> editMessageLiveLocation(
+  ///
+  /// Returns the edited [Message], or `true` when editing an inline
+  /// message identified only by [inlineMessageId].
+  Future<Object> editMessageLiveLocation(
     double latitude,
     double longitude, {
     String? businessConnectionId,
@@ -1357,75 +1422,89 @@ class Bot {
     int? heading,
     int? proximityAlertRadius,
     InlineKeyboardMarkup? replyMarkup,
-  }) =>
-      call('editMessageLiveLocation', {
-        'latitude': latitude,
-        'longitude': longitude,
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (chatId != null) 'chat_id': chatId,
-        if (messageId != null) 'message_id': messageId,
-        if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
-        if (livePeriod != null) 'live_period': livePeriod,
-        if (horizontalAccuracy != null)
-          'horizontal_accuracy': horizontalAccuracy,
-        if (heading != null) 'heading': heading,
-        if (proximityAlertRadius != null)
-          'proximity_alert_radius': proximityAlertRadius,
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      });
+  }) async =>
+      _msgOrBool(
+        await call('editMessageLiveLocation', {
+          'latitude': latitude,
+          'longitude': longitude,
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (chatId != null) 'chat_id': chatId,
+          if (messageId != null) 'message_id': messageId,
+          if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
+          if (livePeriod != null) 'live_period': livePeriod,
+          if (horizontalAccuracy != null)
+            'horizontal_accuracy': horizontalAccuracy,
+          if (heading != null) 'heading': heading,
+          if (proximityAlertRadius != null)
+            'proximity_alert_radius': proximityAlertRadius,
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        }),
+      );
 
   /// Stops updating a live location before its `livePeriod` naturally expires.
-  Future<dynamic> stopMessageLiveLocation({
+  ///
+  /// Returns the edited [Message], or `true` when editing an inline
+  /// message identified only by [inlineMessageId].
+  Future<Object> stopMessageLiveLocation({
     String? businessConnectionId,
     Object? chatId,
     int? messageId,
     String? inlineMessageId,
     InlineKeyboardMarkup? replyMarkup,
-  }) =>
-      call('stopMessageLiveLocation', {
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (chatId != null) 'chat_id': chatId,
-        if (messageId != null) 'message_id': messageId,
-        if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      });
+  }) async =>
+      _msgOrBool(
+        await call('stopMessageLiveLocation', {
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (chatId != null) 'chat_id': chatId,
+          if (messageId != null) 'message_id': messageId,
+          if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        }),
+      );
 
   /// Replaces just the inline keyboard attached to a message, leaving its
   /// content untouched.
-  Future<dynamic> editMessageReplyMarkup({
+  ///
+  /// Returns the edited [Message], or `true` when editing an inline
+  /// message identified only by [inlineMessageId].
+  Future<Object> editMessageReplyMarkup({
     String? businessConnectionId,
     Object? chatId,
     int? messageId,
     String? inlineMessageId,
     InlineKeyboardMarkup? replyMarkup,
-  }) =>
-      call('editMessageReplyMarkup', {
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (chatId != null) 'chat_id': chatId,
-        if (messageId != null) 'message_id': messageId,
-        if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      });
+  }) async =>
+      _msgOrBool(
+        await call('editMessageReplyMarkup', {
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (chatId != null) 'chat_id': chatId,
+          if (messageId != null) 'message_id': messageId,
+          if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        }),
+      );
 
   /// Immediately closes a poll so it no longer accepts new answers, and
   /// returns the final results.
-  Future<Json> stopPoll(
+  Future<Poll> stopPoll(
     Object chatId,
     int messageId, {
     String? businessConnectionId,
     InlineKeyboardMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('stopPoll', {
-          'chat_id': chatId,
-          'message_id': messageId,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Poll(
+        _o(
+          await call('stopPoll', {
+            'chat_id': chatId,
+            'message_id': messageId,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Deletes a single message. Bots can only delete their own messages in
@@ -1446,24 +1525,26 @@ class Bot {
       );
 
   /// Returns a user's profile photos, paginated via [offset]/[limit].
-  Future<Json> getUserProfilePhotos(
+  Future<UserProfilePhotos> getUserProfilePhotos(
     int userId, {
     int? offset,
     int? limit,
   }) async =>
-      _o(
-        await call('getUserProfilePhotos', {
-          'user_id': userId,
-          if (offset != null) 'offset': offset,
-          if (limit != null) 'limit': limit,
-        }),
+      UserProfilePhotos(
+        _o(
+          await call('getUserProfilePhotos', {
+            'user_id': userId,
+            if (offset != null) 'offset': offset,
+            if (limit != null) 'limit': limit,
+          }),
+        ),
       );
 
   /// Resolves a Telegram `file_id` into a [Json] containing `file_path`, which
   /// can then be downloaded with [downloadFile] or streamed directly from
   /// `https://api.telegram.org/file/bot<token>/<file_path>`.
-  Future<Json> getFile(String fileId) async =>
-      _o(await call('getFile', {'file_id': fileId}));
+  Future<TelegramFile> getFile(String fileId) async =>
+      TelegramFile(_o(await call('getFile', {'file_id': fileId})));
 
   /// Bans a user from the chat. In supergroups/channels they won't be able to
   /// return until unbanned; set [untilDate] for a temporary ban.
@@ -1615,26 +1696,28 @@ class Bot {
 
   /// Creates an additional (non-primary) invite link, optionally limited by
   /// [expireDate], [memberLimit], or requiring admin approval via [createsJoinRequest].
-  Future<Json> createChatInviteLink(
+  Future<ChatInviteLink> createChatInviteLink(
     Object chatId, {
     String? name,
     int? expireDate,
     int? memberLimit,
     bool? createsJoinRequest,
   }) async =>
-      _o(
-        await call('createChatInviteLink', {
-          'chat_id': chatId,
-          if (name != null) 'name': name,
-          if (expireDate != null) 'expire_date': expireDate,
-          if (memberLimit != null) 'member_limit': memberLimit,
-          if (createsJoinRequest != null)
-            'creates_join_request': createsJoinRequest,
-        }),
+      ChatInviteLink(
+        _o(
+          await call('createChatInviteLink', {
+            'chat_id': chatId,
+            if (name != null) 'name': name,
+            if (expireDate != null) 'expire_date': expireDate,
+            if (memberLimit != null) 'member_limit': memberLimit,
+            if (createsJoinRequest != null)
+              'creates_join_request': createsJoinRequest,
+          }),
+        ),
       );
 
   /// Edits a previously created non-primary invite link.
-  Future<Json> editChatInviteLink(
+  Future<ChatInviteLink> editChatInviteLink(
     Object chatId,
     String inviteLink, {
     String? name,
@@ -1642,56 +1725,67 @@ class Bot {
     int? memberLimit,
     bool? createsJoinRequest,
   }) async =>
-      _o(
-        await call('editChatInviteLink', {
-          'chat_id': chatId,
-          'invite_link': inviteLink,
-          if (name != null) 'name': name,
-          if (expireDate != null) 'expire_date': expireDate,
-          if (memberLimit != null) 'member_limit': memberLimit,
-          if (createsJoinRequest != null)
-            'creates_join_request': createsJoinRequest,
-        }),
+      ChatInviteLink(
+        _o(
+          await call('editChatInviteLink', {
+            'chat_id': chatId,
+            'invite_link': inviteLink,
+            if (name != null) 'name': name,
+            if (expireDate != null) 'expire_date': expireDate,
+            if (memberLimit != null) 'member_limit': memberLimit,
+            if (createsJoinRequest != null)
+              'creates_join_request': createsJoinRequest,
+          }),
+        ),
       );
 
   /// Revokes an invite link so it can no longer be used to join.
-  Future<Json> revokeChatInviteLink(Object chatId, String inviteLink) async =>
-      _o(
-        await call(
-          'revokeChatInviteLink',
-          {'chat_id': chatId, 'invite_link': inviteLink},
+  Future<ChatInviteLink> revokeChatInviteLink(
+    Object chatId,
+    String inviteLink,
+  ) async =>
+      ChatInviteLink(
+        _o(
+          await call(
+            'revokeChatInviteLink',
+            {'chat_id': chatId, 'invite_link': inviteLink},
+          ),
         ),
       );
 
   /// Creates a subscription invite link that charges [subscriptionPeriod] /
   /// [subscriptionPrice] in Telegram Stars for access to the channel.
-  Future<Json> createChatSubscriptionInviteLink(
+  Future<ChatInviteLink> createChatSubscriptionInviteLink(
     Object chatId,
     int subscriptionPeriod,
     int subscriptionPrice, {
     String? name,
   }) async =>
-      _o(
-        await call('createChatSubscriptionInviteLink', {
-          'chat_id': chatId,
-          'subscription_period': subscriptionPeriod,
-          'subscription_price': subscriptionPrice,
-          if (name != null) 'name': name,
-        }),
+      ChatInviteLink(
+        _o(
+          await call('createChatSubscriptionInviteLink', {
+            'chat_id': chatId,
+            'subscription_period': subscriptionPeriod,
+            'subscription_price': subscriptionPrice,
+            if (name != null) 'name': name,
+          }),
+        ),
       );
 
   /// Edits the name of an existing subscription invite link.
-  Future<Json> editChatSubscriptionInviteLink(
+  Future<ChatInviteLink> editChatSubscriptionInviteLink(
     Object chatId,
     String inviteLink, {
     String? name,
   }) async =>
-      _o(
-        await call('editChatSubscriptionInviteLink', {
-          'chat_id': chatId,
-          'invite_link': inviteLink,
-          if (name != null) 'name': name,
-        }),
+      ChatInviteLink(
+        _o(
+          await call('editChatSubscriptionInviteLink', {
+            'chat_id': chatId,
+            'invite_link': inviteLink,
+            if (name != null) 'name': name,
+          }),
+        ),
       );
 
   /// Approves a pending join request for a chat that requires admin approval.
@@ -1773,20 +1867,26 @@ class Bot {
       _b(await call('leaveChat', {'chat_id': chatId}));
 
   /// Fetches up-to-date information about a chat (title, description, permissions, etc).
-  Future<Json> getChat(Object chatId) async =>
-      _o(await call('getChat', {'chat_id': chatId}));
+  Future<ChatFullInfo> getChat(Object chatId) async =>
+      ChatFullInfo(_o(await call('getChat', {'chat_id': chatId})));
 
   /// Lists every administrator (and the owner) of the chat.
-  Future<List<Json>> getChatAdministrators(Object chatId) async =>
-      _l(await call('getChatAdministrators', {'chat_id': chatId}));
+  Future<List<ChatMember>> getChatAdministrators(Object chatId) async =>
+      _l(await call('getChatAdministrators', {'chat_id': chatId}))
+          .map(ChatMember.new)
+          .toList();
 
   /// Returns the number of members in the chat.
   Future<int> getChatMemberCount(Object chatId) async =>
       _i(await call('getChatMemberCount', {'chat_id': chatId}));
 
   /// Fetches a specific member's status and permissions within the chat.
-  Future<Json> getChatMember(Object chatId, int userId) async =>
-      _o(await call('getChatMember', {'chat_id': chatId, 'user_id': userId}));
+  Future<ChatMember> getChatMember(Object chatId, int userId) async =>
+      ChatMember(
+        _o(
+          await call('getChatMember', {'chat_id': chatId, 'user_id': userId}),
+        ),
+      );
 
   /// Sets the group's custom sticker set (supergroups only).
   Future<bool> setChatStickerSet(Object chatId, String stickerSetName) async =>
@@ -1802,24 +1902,26 @@ class Bot {
       _b(await call('deleteChatStickerSet', {'chat_id': chatId}));
 
   /// Lists the built-in custom emoji stickers usable as forum topic icons.
-  Future<List<Json>> getForumTopicIconStickers() async =>
-      _l(await call('getForumTopicIconStickers'));
+  Future<List<Sticker>> getForumTopicIconStickers() async =>
+      _l(await call('getForumTopicIconStickers')).map(Sticker.new).toList();
 
   /// Creates a new topic in a forum-enabled supergroup.
-  Future<Json> createForumTopic(
+  Future<ForumTopic> createForumTopic(
     Object chatId,
     String name, {
     int? iconColor,
     String? iconCustomEmojiId,
   }) async =>
-      _o(
-        await call('createForumTopic', {
-          'chat_id': chatId,
-          'name': name,
-          if (iconColor != null) 'icon_color': iconColor,
-          if (iconCustomEmojiId != null)
-            'icon_custom_emoji_id': iconCustomEmojiId,
-        }),
+      ForumTopic(
+        _o(
+          await call('createForumTopic', {
+            'chat_id': chatId,
+            'name': name,
+            if (iconColor != null) 'icon_color': iconColor,
+            if (iconCustomEmojiId != null)
+              'icon_custom_emoji_id': iconCustomEmojiId,
+          }),
+        ),
       );
 
   /// Renames a forum topic and/or changes its icon.
@@ -1948,13 +2050,16 @@ class Bot {
       );
 
   /// Returns the currently configured command list for a given [scope]/[languageCode].
-  Future<List<Json>> getMyCommands({Json? scope, String? languageCode}) async =>
+  Future<List<BotCommand>> getMyCommands({
+    Json? scope,
+    String? languageCode,
+  }) async =>
       _l(
         await call('getMyCommands', {
           if (scope != null) 'scope': scope,
           if (languageCode != null) 'language_code': languageCode,
         }),
-      );
+      ).map(BotCommand.new).toList();
 
   /// Sets the bot's display name.
   Future<bool> setMyName({String? name, String? languageCode}) async => _b(
@@ -1965,10 +2070,12 @@ class Bot {
       );
 
   /// Returns the bot's current display name.
-  Future<Json> getMyName({String? languageCode}) async => _o(
-        await call('getMyName', {
-          if (languageCode != null) 'language_code': languageCode,
-        }),
+  Future<BotName> getMyName({String? languageCode}) async => BotName(
+        _o(
+          await call('getMyName', {
+            if (languageCode != null) 'language_code': languageCode,
+          }),
+        ),
       );
 
   /// Sets the description shown on the bot's profile page before a user has started it.
@@ -1984,10 +2091,13 @@ class Bot {
       );
 
   /// Returns the bot's current profile description.
-  Future<Json> getMyDescription({String? languageCode}) async => _o(
-        await call('getMyDescription', {
-          if (languageCode != null) 'language_code': languageCode,
-        }),
+  Future<BotDescription> getMyDescription({String? languageCode}) async =>
+      BotDescription(
+        _o(
+          await call('getMyDescription', {
+            if (languageCode != null) 'language_code': languageCode,
+          }),
+        ),
       );
 
   /// Sets the short description shown alongside the bot's profile photo and in chat sharing.
@@ -2003,10 +2113,15 @@ class Bot {
       );
 
   /// Returns the bot's current short description.
-  Future<Json> getMyShortDescription({String? languageCode}) async => _o(
-        await call('getMyShortDescription', {
-          if (languageCode != null) 'language_code': languageCode,
-        }),
+  Future<BotShortDescription> getMyShortDescription({
+    String? languageCode,
+  }) async =>
+      BotShortDescription(
+        _o(
+          await call('getMyShortDescription', {
+            if (languageCode != null) 'language_code': languageCode,
+          }),
+        ),
       );
 
   /// Configures the menu button shown in a private chat (e.g. to open a Web App).
@@ -2019,10 +2134,12 @@ class Bot {
       );
 
   /// Returns the currently configured menu button for a chat.
-  Future<Json> getChatMenuButton({Object? chatId}) async => _o(
-        await call('getChatMenuButton', {
-          if (chatId != null) 'chat_id': chatId,
-        }),
+  Future<MenuButton> getChatMenuButton({Object? chatId}) async => MenuButton(
+        _o(
+          await call('getChatMenuButton', {
+            if (chatId != null) 'chat_id': chatId,
+          }),
+        ),
       );
 
   /// Sets the default admin rights requested when the bot is added as an admin.
@@ -2038,17 +2155,22 @@ class Bot {
       );
 
   /// Returns the bot's currently configured default admin rights.
-  Future<Json> getMyDefaultAdministratorRights({bool? forChannels}) async => _o(
-        await call('getMyDefaultAdministratorRights', {
-          if (forChannels != null) 'for_channels': forChannels,
-        }),
+  Future<ChatAdministratorRights> getMyDefaultAdministratorRights({
+    bool? forChannels,
+  }) async =>
+      ChatAdministratorRights.fromJson(
+        _o(
+          await call('getMyDefaultAdministratorRights', {
+            if (forChannels != null) 'for_channels': forChannels,
+          }),
+        ),
       );
 
   /// Responds to an inline query (`@yourbot ...` typed in any chat) with a list
   /// of [results] the user can pick from.
   Future<bool> answerInlineQuery(
     String inlineQueryId,
-    List<Json> results, {
+    List<InlineQueryResult> results, {
     int? cacheTime,
     bool? isPersonal,
     String? nextOffset,
@@ -2057,7 +2179,7 @@ class Bot {
       _b(
         await call('answerInlineQuery', {
           'inline_query_id': inlineQueryId,
-          'results': results,
+          'results': inlineQueryResults(results),
           if (cacheTime != null) 'cache_time': cacheTime,
           if (isPersonal != null) 'is_personal': isPersonal,
           if (nextOffset != null) 'next_offset': nextOffset,
@@ -2066,38 +2188,46 @@ class Bot {
       );
 
   /// Sends a [result] back to a Web App that was opened via a `switch_inline_query`-style button.
-  Future<Json> answerWebAppQuery(String webAppQueryId, Json result) async => _o(
-        await call(
-          'answerWebAppQuery',
-          {'web_app_query_id': webAppQueryId, 'result': result},
+  Future<SentWebAppMessage> answerWebAppQuery(
+    String webAppQueryId,
+    InlineQueryResult result,
+  ) async =>
+      SentWebAppMessage(
+        _o(
+          await call(
+            'answerWebAppQuery',
+            {'web_app_query_id': webAppQueryId, 'result': result.toJson()},
+          ),
         ),
       );
 
   /// Pre-uploads an inline message result so it can be reused efficiently across many users.
-  Future<Json> savePreparedInlineMessage(
+  Future<PreparedInlineMessage> savePreparedInlineMessage(
     int userId,
-    Json result, {
+    InlineQueryResult result, {
     bool? allowUserChats,
     bool? allowBotChats,
     bool? allowGroupChats,
     bool? allowChannelChats,
   }) async =>
-      _o(
-        await call('savePreparedInlineMessage', {
-          'user_id': userId,
-          'result': result,
-          if (allowUserChats != null) 'allow_user_chats': allowUserChats,
-          if (allowBotChats != null) 'allow_bot_chats': allowBotChats,
-          if (allowGroupChats != null) 'allow_group_chats': allowGroupChats,
-          if (allowChannelChats != null)
-            'allow_channel_chats': allowChannelChats,
-        }),
+      PreparedInlineMessage(
+        _o(
+          await call('savePreparedInlineMessage', {
+            'user_id': userId,
+            'result': result.toJson(),
+            if (allowUserChats != null) 'allow_user_chats': allowUserChats,
+            if (allowBotChats != null) 'allow_bot_chats': allowBotChats,
+            if (allowGroupChats != null) 'allow_group_chats': allowGroupChats,
+            if (allowChannelChats != null)
+              'allow_channel_chats': allowChannelChats,
+          }),
+        ),
       );
 
   /// Sends an invoice for a payment (physical goods, digital goods, or
   /// Telegram Stars). Use [providerToken] for a payment provider, or leave it
   /// empty when charging in Telegram Stars (`currency: 'XTR'`).
-  Future<Json> sendInvoice(
+  Future<Message> sendInvoice(
     Object chatId,
     String title,
     String description,
@@ -2128,45 +2258,47 @@ class Bot {
     ReplyParameters? replyParameters,
     InlineKeyboardMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendInvoice', {
-          'chat_id': chatId,
-          'title': title,
-          'description': description,
-          'payload': payload,
-          'currency': currency,
-          'prices': prices,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (providerToken != null) 'provider_token': providerToken,
-          if (maxTipAmount != null) 'max_tip_amount': maxTipAmount,
-          if (suggestedTipAmounts != null)
-            'suggested_tip_amounts': suggestedTipAmounts,
-          if (startParameter != null) 'start_parameter': startParameter,
-          if (providerData != null) 'provider_data': providerData,
-          if (photoUrl != null) 'photo_url': photoUrl,
-          if (photoSize != null) 'photo_size': photoSize,
-          if (photoWidth != null) 'photo_width': photoWidth,
-          if (photoHeight != null) 'photo_height': photoHeight,
-          if (needName != null) 'need_name': needName,
-          if (needPhoneNumber != null) 'need_phone_number': needPhoneNumber,
-          if (needEmail != null) 'need_email': needEmail,
-          if (needShippingAddress != null)
-            'need_shipping_address': needShippingAddress,
-          if (sendPhoneNumberToProvider != null)
-            'send_phone_number_to_provider': sendPhoneNumberToProvider,
-          if (sendEmailToProvider != null)
-            'send_email_to_provider': sendEmailToProvider,
-          if (isFlexible != null) 'is_flexible': isFlexible,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendInvoice', {
+            'chat_id': chatId,
+            'title': title,
+            'description': description,
+            'payload': payload,
+            'currency': currency,
+            'prices': prices,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (providerToken != null) 'provider_token': providerToken,
+            if (maxTipAmount != null) 'max_tip_amount': maxTipAmount,
+            if (suggestedTipAmounts != null)
+              'suggested_tip_amounts': suggestedTipAmounts,
+            if (startParameter != null) 'start_parameter': startParameter,
+            if (providerData != null) 'provider_data': providerData,
+            if (photoUrl != null) 'photo_url': photoUrl,
+            if (photoSize != null) 'photo_size': photoSize,
+            if (photoWidth != null) 'photo_width': photoWidth,
+            if (photoHeight != null) 'photo_height': photoHeight,
+            if (needName != null) 'need_name': needName,
+            if (needPhoneNumber != null) 'need_phone_number': needPhoneNumber,
+            if (needEmail != null) 'need_email': needEmail,
+            if (needShippingAddress != null)
+              'need_shipping_address': needShippingAddress,
+            if (sendPhoneNumberToProvider != null)
+              'send_phone_number_to_provider': sendPhoneNumberToProvider,
+            if (sendEmailToProvider != null)
+              'send_email_to_provider': sendEmailToProvider,
+            if (isFlexible != null) 'is_flexible': isFlexible,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Creates a standalone payment link for an invoice, without sending it to a chat.
@@ -2259,11 +2391,17 @@ class Bot {
       );
 
   /// Lists the bot's incoming and outgoing Telegram Stars transactions.
-  Future<Json> getStarTransactions({int? offset, int? limit}) async => _o(
-        await call('getStarTransactions', {
-          if (offset != null) 'offset': offset,
-          if (limit != null) 'limit': limit,
-        }),
+  Future<StarTransactions> getStarTransactions({
+    int? offset,
+    int? limit,
+  }) async =>
+      StarTransactions(
+        _o(
+          await call('getStarTransactions', {
+            if (offset != null) 'offset': offset,
+            if (limit != null) 'limit': limit,
+          }),
+        ),
       );
 
   /// Refunds a successful payment that was made in Telegram Stars.
@@ -2293,7 +2431,7 @@ class Bot {
       );
 
   /// Sends a Telegram Game (an HTML5 game registered with @BotFather).
-  Future<Json> sendGame(
+  Future<Message> sendGame(
     int chatId,
     String gameShortName, {
     String? businessConnectionId,
@@ -2305,27 +2443,32 @@ class Bot {
     ReplyParameters? replyParameters,
     InlineKeyboardMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendGame', {
-          'chat_id': chatId,
-          'game_short_name': gameShortName,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendGame', {
+            'chat_id': chatId,
+            'game_short_name': gameShortName,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Updates a user's score in a previously sent game message.
-  Future<dynamic> setGameScore(
+  ///
+  /// Returns the edited [Message], or `true` when editing an inline
+  /// message identified only by [inlineMessageId].
+  Future<Object> setGameScore(
     int userId,
     int score, {
     bool? force,
@@ -2333,20 +2476,22 @@ class Bot {
     int? chatId,
     int? messageId,
     String? inlineMessageId,
-  }) =>
-      call('setGameScore', {
-        'user_id': userId,
-        'score': score,
-        if (force != null) 'force': force,
-        if (disableEditMessage != null)
-          'disable_edit_message': disableEditMessage,
-        if (chatId != null) 'chat_id': chatId,
-        if (messageId != null) 'message_id': messageId,
-        if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
-      });
+  }) async =>
+      _msgOrBool(
+        await call('setGameScore', {
+          'user_id': userId,
+          'score': score,
+          if (force != null) 'force': force,
+          if (disableEditMessage != null)
+            'disable_edit_message': disableEditMessage,
+          if (chatId != null) 'chat_id': chatId,
+          if (messageId != null) 'message_id': messageId,
+          if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
+        }),
+      );
 
   /// Fetches the high score table for a game message.
-  Future<List<Json>> getGameHighScores(
+  Future<List<GameHighScore>> getGameHighScores(
     int userId, {
     int? chatId,
     int? messageId,
@@ -2359,10 +2504,10 @@ class Bot {
           if (messageId != null) 'message_id': messageId,
           if (inlineMessageId != null) 'inline_message_id': inlineMessageId,
         }),
-      );
+      ).map(GameHighScore.new).toList();
 
   /// Sends a sticker from a `file_id`, URL, or local upload.
-  Future<Json> sendSticker(
+  Future<Message> sendSticker(
     Object chatId,
     InputFile sticker, {
     String? businessConnectionId,
@@ -2375,35 +2520,37 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call(
-          'sendSticker',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (emoji != null) 'emoji': emoji,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-          },
-          {'sticker': sticker},
+      Message(
+        _o(
+          await call(
+            'sendSticker',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (emoji != null) 'emoji': emoji,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+            },
+            {'sticker': sticker},
+          ),
         ),
       );
 
   /// Fetches metadata and every sticker in a named sticker set.
-  Future<Json> getStickerSet(String name) async =>
-      _o(await call('getStickerSet', {'name': name}));
+  Future<StickerSet> getStickerSet(String name) async =>
+      StickerSet(_o(await call('getStickerSet', {'name': name})));
 
   /// Resolves a list of custom emoji IDs into full sticker information.
-  Future<List<Json>> getCustomEmojiStickers(
+  Future<List<Sticker>> getCustomEmojiStickers(
     List<String> customEmojiIds,
   ) async =>
       _l(
@@ -2411,20 +2558,22 @@ class Bot {
           'getCustomEmojiStickers',
           {'custom_emoji_ids': customEmojiIds},
         ),
-      );
+      ).map(Sticker.new).toList();
 
   /// Uploads a file to be later reused as a sticker in [createNewStickerSet]
   /// or [addStickerToSet], returning a reusable `file_id`.
-  Future<Json> uploadStickerFile(
+  Future<TelegramFile> uploadStickerFile(
     int userId,
     InputFile sticker,
     StickerFormat stickerFormat,
   ) async =>
-      _o(
-        await call(
-          'uploadStickerFile',
-          {'user_id': userId, 'sticker_format': stickerFormat.value},
-          {'sticker': sticker},
+      TelegramFile(
+        _o(
+          await call(
+            'uploadStickerFile',
+            {'user_id': userId, 'sticker_format': stickerFormat.value},
+            {'sticker': sticker},
+          ),
         ),
       );
 
@@ -2604,8 +2753,12 @@ class Bot {
       _b(await call('deleteStickerSet', {'name': name}));
 
   /// Lists the boosts a user has applied to a chat.
-  Future<Json> getUserChatBoosts(Object chatId, int userId) async => _o(
-        await call('getUserChatBoosts', {'chat_id': chatId, 'user_id': userId}),
+  Future<UserChatBoosts> getUserChatBoosts(Object chatId, int userId) async =>
+      UserChatBoosts(
+        _o(
+          await call(
+              'getUserChatBoosts', {'chat_id': chatId, 'user_id': userId}),
+        ),
       );
 
   /// Verifies [userId] on behalf of the organization that owns the bot,
@@ -2644,7 +2797,8 @@ class Bot {
       _b(await call('removeChatVerification', {'chat_id': chatId}));
 
   /// Returns the bot's current balance of Telegram Stars as a `StarAmount` object (raw JSON).
-  Future<Json> getMyStarBalance() async => _o(await call('getMyStarBalance'));
+  Future<StarAmount> getMyStarBalance() async =>
+      StarAmount(_o(await call('getMyStarBalance')));
 
   /// Sets the bot's profile photo. [photo] can be a static image
   /// ([InputProfilePhotoStatic]) or a short animation ([InputProfilePhotoAnimated]).
@@ -2659,17 +2813,19 @@ class Bot {
       _b(await call('removeMyProfilePhoto'));
 
   /// Returns the audio files a user has added to their profile, as a `UserProfileAudios` object (raw JSON).
-  Future<Json> getUserProfileAudios(
+  Future<UserProfileAudios> getUserProfileAudios(
     int userId, {
     int? offset,
     int? limit,
   }) async =>
-      _o(
-        await call('getUserProfileAudios', {
-          'user_id': userId,
-          if (offset != null) 'offset': offset,
-          if (limit != null) 'limit': limit,
-        }),
+      UserProfileAudios(
+        _o(
+          await call('getUserProfileAudios', {
+            'user_id': userId,
+            if (offset != null) 'offset': offset,
+            if (limit != null) 'limit': limit,
+          }),
+        ),
       );
 
   /// Returns the current access token of a bot managed by this bot ([botId]
@@ -2686,26 +2842,28 @@ class Bot {
 
   /// Stores a keyboard [button] (e.g. a users/chat/managed-bot request
   /// button — see [KeyboardButton]) for reuse from a Mini App via
-  /// `sendPreparedMessage`. Returns a `PreparedKeyboardButton` (raw JSON).
-  /// The `allow*Chats` flags mirror [Bot.savePreparedInlineMessage]'s.
-  Future<Json> savePreparedKeyboardButton(
+  /// `sendPreparedMessage`. The `allow*Chats` flags mirror
+  /// [Bot.savePreparedInlineMessage]'s.
+  Future<PreparedInlineMessage> savePreparedKeyboardButton(
     int userId,
-    Json button, {
+    KeyboardButton button, {
     bool? allowUserChats,
     bool? allowBotChats,
     bool? allowGroupChats,
     bool? allowChannelChats,
   }) async =>
-      _o(
-        await call('savePreparedKeyboardButton', {
-          'user_id': userId,
-          'button': button,
-          if (allowUserChats != null) 'allow_user_chats': allowUserChats,
-          if (allowBotChats != null) 'allow_bot_chats': allowBotChats,
-          if (allowGroupChats != null) 'allow_group_chats': allowGroupChats,
-          if (allowChannelChats != null)
-            'allow_channel_chats': allowChannelChats,
-        }),
+      PreparedInlineMessage(
+        _o(
+          await call('savePreparedKeyboardButton', {
+            'user_id': userId,
+            'button': button.toJson(),
+            if (allowUserChats != null) 'allow_user_chats': allowUserChats,
+            if (allowBotChats != null) 'allow_bot_chats': allowBotChats,
+            if (allowGroupChats != null) 'allow_group_chats': allowGroupChats,
+            if (allowChannelChats != null)
+              'allow_channel_chats': allowChannelChats,
+          }),
+        ),
       );
 
   /// Removes one user's reaction from a message in a chat the bot administers.
@@ -2762,7 +2920,7 @@ class Bot {
       );
 
   /// Sends a checklist on behalf of a connected business account.
-  Future<Json> sendChecklist(
+  Future<Message> sendChecklist(
     String businessConnectionId,
     int chatId,
     InputChecklist checklist, {
@@ -2772,37 +2930,41 @@ class Bot {
     ReplyParameters? replyParameters,
     InlineKeyboardMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendChecklist', {
-          'business_connection_id': businessConnectionId,
-          'chat_id': chatId,
-          'checklist': checklist.toJson(),
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendChecklist', {
+            'business_connection_id': businessConnectionId,
+            'chat_id': chatId,
+            'checklist': checklist.toJson(),
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Edits a checklist previously sent on behalf of a connected business account.
-  Future<Json> editMessageChecklist(
+  Future<Message> editMessageChecklist(
     String businessConnectionId,
     int chatId,
     int messageId,
     InputChecklist checklist, {
     InlineKeyboardMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('editMessageChecklist', {
-          'business_connection_id': businessConnectionId,
-          'chat_id': chatId,
-          'message_id': messageId,
-          'checklist': checklist.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('editMessageChecklist', {
+            'business_connection_id': businessConnectionId,
+            'chat_id': chatId,
+            'message_id': messageId,
+            'checklist': checklist.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Sends a "live photo" — a still [photo] paired with a short [video] clip
@@ -2812,7 +2974,7 @@ class Bot {
   /// callback query the guest triggered), the message is sent as an
   /// *ephemeral* message visible only to that user — see
   /// [editEphemeralMessageText] and friends for editing it afterwards.
-  Future<Json> sendLivePhoto(
+  Future<Message> sendLivePhoto(
     Object chatId,
     InputFile photo,
     InputFile video, {
@@ -2835,47 +2997,53 @@ class Bot {
     int? receiverUserId,
     String? callbackQueryId,
   }) async =>
-      _o(
-        await call(
-          'sendLivePhoto',
-          {
-            'chat_id': chatId,
-            if (businessConnectionId != null)
-              'business_connection_id': businessConnectionId,
-            if (messageThreadId != null) 'message_thread_id': messageThreadId,
-            if (caption != null) 'caption': caption,
-            if (parseMode != null) 'parse_mode': parseMode.value,
-            if (captionEntities != null) 'caption_entities': captionEntities,
-            if (showCaptionAboveMedia != null)
-              'show_caption_above_media': showCaptionAboveMedia,
-            if (hasSpoiler != null) 'has_spoiler': hasSpoiler,
-            if (duration != null) 'duration': duration,
-            if (width != null) 'width': width,
-            if (height != null) 'height': height,
-            if (disableNotification != null)
-              'disable_notification': disableNotification,
-            if (protectContent != null) 'protect_content': protectContent,
-            if (allowPaidBroadcast != null)
-              'allow_paid_broadcast': allowPaidBroadcast,
-            if (messageEffectId != null) 'message_effect_id': messageEffectId,
-            if (replyParameters != null)
-              'reply_parameters': replyParameters.toJson(),
-            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-            if (receiverUserId != null) 'receiver_user_id': receiverUserId,
-            if (callbackQueryId != null) 'callback_query_id': callbackQueryId,
-          },
-          {'photo': photo, 'video': video},
+      Message(
+        _o(
+          await call(
+            'sendLivePhoto',
+            {
+              'chat_id': chatId,
+              if (businessConnectionId != null)
+                'business_connection_id': businessConnectionId,
+              if (messageThreadId != null) 'message_thread_id': messageThreadId,
+              if (caption != null) 'caption': caption,
+              if (parseMode != null) 'parse_mode': parseMode.value,
+              if (captionEntities != null) 'caption_entities': captionEntities,
+              if (showCaptionAboveMedia != null)
+                'show_caption_above_media': showCaptionAboveMedia,
+              if (hasSpoiler != null) 'has_spoiler': hasSpoiler,
+              if (duration != null) 'duration': duration,
+              if (width != null) 'width': width,
+              if (height != null) 'height': height,
+              if (disableNotification != null)
+                'disable_notification': disableNotification,
+              if (protectContent != null) 'protect_content': protectContent,
+              if (allowPaidBroadcast != null)
+                'allow_paid_broadcast': allowPaidBroadcast,
+              if (messageEffectId != null) 'message_effect_id': messageEffectId,
+              if (replyParameters != null)
+                'reply_parameters': replyParameters.toJson(),
+              if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+              if (receiverUserId != null) 'receiver_user_id': receiverUserId,
+              if (callbackQueryId != null) 'callback_query_id': callbackQueryId,
+            },
+            {'photo': photo, 'video': video},
+          ),
         ),
       );
 
   /// Answers a query sent by a guest (an unauthenticated user browsing via
-  /// Guest Mode), delivering [result] back to them. [result] should be
-  /// shaped like a `SentGuestMessage`; raw [Json] is used since the shape
-  /// depends on what kind of content you send back.
-  Future<Json> answerGuestQuery(String guestQueryId, Json result) async => _o(
-        await call(
-          'answerGuestQuery',
-          {'guest_query_id': guestQueryId, 'result': result},
+  /// Guest Mode), delivering [result] back to them.
+  Future<SentWebAppMessage> answerGuestQuery(
+    String guestQueryId,
+    InlineQueryResult result,
+  ) async =>
+      SentWebAppMessage(
+        _o(
+          await call(
+            'answerGuestQuery',
+            {'guest_query_id': guestQueryId, 'result': result.toJson()},
+          ),
         ),
       );
 
@@ -2886,7 +3054,7 @@ class Bot {
   /// [Json] is used given how many block types that structure can contain —
   /// see https://core.telegram.org/bots/api#inputrichmessage for the shape,
   /// or fall back to [call] directly if this typed wrapper doesn't fit.
-  Future<Json> sendRichMessage(
+  Future<Message> sendRichMessage(
     Object chatId,
     Json richMessage, {
     String? businessConnectionId,
@@ -2898,23 +3066,25 @@ class Bot {
     ReplyParameters? replyParameters,
     ReplyMarkup? replyMarkup,
   }) async =>
-      _o(
-        await call('sendRichMessage', {
-          'chat_id': chatId,
-          'rich_message': richMessage,
-          if (businessConnectionId != null)
-            'business_connection_id': businessConnectionId,
-          if (messageThreadId != null) 'message_thread_id': messageThreadId,
-          if (disableNotification != null)
-            'disable_notification': disableNotification,
-          if (protectContent != null) 'protect_content': protectContent,
-          if (allowPaidBroadcast != null)
-            'allow_paid_broadcast': allowPaidBroadcast,
-          if (messageEffectId != null) 'message_effect_id': messageEffectId,
-          if (replyParameters != null)
-            'reply_parameters': replyParameters.toJson(),
-          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-        }),
+      Message(
+        _o(
+          await call('sendRichMessage', {
+            'chat_id': chatId,
+            'rich_message': richMessage,
+            if (businessConnectionId != null)
+              'business_connection_id': businessConnectionId,
+            if (messageThreadId != null) 'message_thread_id': messageThreadId,
+            if (disableNotification != null)
+              'disable_notification': disableNotification,
+            if (protectContent != null) 'protect_content': protectContent,
+            if (allowPaidBroadcast != null)
+              'allow_paid_broadcast': allowPaidBroadcast,
+            if (messageEffectId != null) 'message_effect_id': messageEffectId,
+            if (replyParameters != null)
+              'reply_parameters': replyParameters.toJson(),
+            if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+          }),
+        ),
       );
 
   /// Streams a rich message to the chat progressively, the way
@@ -2961,21 +3131,26 @@ class Bot {
   /// approving them via [answerChatJoinRequestQuery]. [webApp] should be
   /// shaped like `WebAppInfo` (a `url` field); raw [Json] is used for
   /// consistency with [answerWebAppQuery].
-  Future<Json> sendChatJoinRequestWebApp(
+  Future<SentWebAppMessage> sendChatJoinRequestWebApp(
     String chatJoinRequestQueryId,
     Json webApp,
   ) async =>
-      _o(
-        await call('sendChatJoinRequestWebApp', {
-          'chat_join_request_query_id': chatJoinRequestQueryId,
-          'web_app': webApp,
-        }),
+      SentWebAppMessage(
+        _o(
+          await call('sendChatJoinRequestWebApp', {
+            'chat_join_request_query_id': chatJoinRequestQueryId,
+            'web_app': webApp,
+          }),
+        ),
       );
 
   /// Edits the text of an ephemeral message (one only visible to a single
   /// [receiverUserId], as sent with a `receiver_user_id` argument to methods
   /// like [sendLivePhoto]) previously sent in [chatId].
-  Future<dynamic> editEphemeralMessageText(
+  ///
+  /// Returns the edited [Message], or `true` when Telegram doesn't send a
+  /// full message object back.
+  Future<Object> editEphemeralMessageText(
     Object chatId,
     int receiverUserId,
     int ephemeralMessageId,
@@ -2985,30 +3160,32 @@ class Bot {
     List<Json>? entities,
     LinkPreviewOptions? linkPreviewOptions,
     InlineKeyboardMarkup? replyMarkup,
-  }) =>
-      call('editEphemeralMessageText', {
-        'chat_id': chatId,
-        'receiver_user_id': receiverUserId,
-        'ephemeral_message_id': ephemeralMessageId,
-        'text': text,
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (parseMode != null) 'parse_mode': parseMode.value,
-        if (entities != null) 'entities': entities,
-        if (linkPreviewOptions != null)
-          'link_preview_options': linkPreviewOptions.toJson(),
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      });
+  }) async =>
+      _msgOrBool(
+        await call('editEphemeralMessageText', {
+          'chat_id': chatId,
+          'receiver_user_id': receiverUserId,
+          'ephemeral_message_id': ephemeralMessageId,
+          'text': text,
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (parseMode != null) 'parse_mode': parseMode.value,
+          if (entities != null) 'entities': entities,
+          if (linkPreviewOptions != null)
+            'link_preview_options': linkPreviewOptions.toJson(),
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        }),
+      );
 
   /// Replaces the media of an ephemeral message. See [editEphemeralMessageText].
-  Future<dynamic> editEphemeralMessageMedia(
+  Future<Object> editEphemeralMessageMedia(
     Object chatId,
     int receiverUserId,
     int ephemeralMessageId,
     InputMedia media, {
     String? businessConnectionId,
     InlineKeyboardMarkup? replyMarkup,
-  }) {
+  }) async {
     final files = <String, InputFile>{};
     String mediaRef;
     if (media.media.isUpload) {
@@ -3026,23 +3203,25 @@ class Bot {
         thumbRef = media.thumbnail!.remoteValue;
       }
     }
-    return call(
-      'editEphemeralMessageMedia',
-      {
-        'chat_id': chatId,
-        'receiver_user_id': receiverUserId,
-        'ephemeral_message_id': ephemeralMessageId,
-        'media': media.toJson(mediaRef, thumbRef: thumbRef),
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      },
-      files,
+    return _msgOrBool(
+      await call(
+        'editEphemeralMessageMedia',
+        {
+          'chat_id': chatId,
+          'receiver_user_id': receiverUserId,
+          'ephemeral_message_id': ephemeralMessageId,
+          'media': media.toJson(mediaRef, thumbRef: thumbRef),
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        },
+        files,
+      ),
     );
   }
 
   /// Edits the caption of an ephemeral message. See [editEphemeralMessageText].
-  Future<dynamic> editEphemeralMessageCaption(
+  Future<Object> editEphemeralMessageCaption(
     Object chatId,
     int receiverUserId,
     int ephemeralMessageId, {
@@ -3052,37 +3231,41 @@ class Bot {
     List<Json>? captionEntities,
     bool? showCaptionAboveMedia,
     InlineKeyboardMarkup? replyMarkup,
-  }) =>
-      call('editEphemeralMessageCaption', {
-        'chat_id': chatId,
-        'receiver_user_id': receiverUserId,
-        'ephemeral_message_id': ephemeralMessageId,
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (caption != null) 'caption': caption,
-        if (parseMode != null) 'parse_mode': parseMode.value,
-        if (captionEntities != null) 'caption_entities': captionEntities,
-        if (showCaptionAboveMedia != null)
-          'show_caption_above_media': showCaptionAboveMedia,
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      });
+  }) async =>
+      _msgOrBool(
+        await call('editEphemeralMessageCaption', {
+          'chat_id': chatId,
+          'receiver_user_id': receiverUserId,
+          'ephemeral_message_id': ephemeralMessageId,
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (caption != null) 'caption': caption,
+          if (parseMode != null) 'parse_mode': parseMode.value,
+          if (captionEntities != null) 'caption_entities': captionEntities,
+          if (showCaptionAboveMedia != null)
+            'show_caption_above_media': showCaptionAboveMedia,
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        }),
+      );
 
   /// Replaces the inline keyboard of an ephemeral message. See [editEphemeralMessageText].
-  Future<dynamic> editEphemeralMessageReplyMarkup(
+  Future<Object> editEphemeralMessageReplyMarkup(
     Object chatId,
     int receiverUserId,
     int ephemeralMessageId, {
     String? businessConnectionId,
     InlineKeyboardMarkup? replyMarkup,
-  }) =>
-      call('editEphemeralMessageReplyMarkup', {
-        'chat_id': chatId,
-        'receiver_user_id': receiverUserId,
-        'ephemeral_message_id': ephemeralMessageId,
-        if (businessConnectionId != null)
-          'business_connection_id': businessConnectionId,
-        if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
-      });
+  }) async =>
+      _msgOrBool(
+        await call('editEphemeralMessageReplyMarkup', {
+          'chat_id': chatId,
+          'receiver_user_id': receiverUserId,
+          'ephemeral_message_id': ephemeralMessageId,
+          if (businessConnectionId != null)
+            'business_connection_id': businessConnectionId,
+          if (replyMarkup != null) 'reply_markup': replyMarkup.toJson(),
+        }),
+      );
 
   /// Deletes an ephemeral message. See [editEphemeralMessageText].
   Future<bool> deleteEphemeralMessage(
@@ -3117,10 +3300,15 @@ class Bot {
       );
 
   /// Fetches details about a Telegram Business connection by its ID.
-  Future<Json> getBusinessConnection(String businessConnectionId) async => _o(
-        await call(
-          'getBusinessConnection',
-          {'business_connection_id': businessConnectionId},
+  Future<BusinessConnection> getBusinessConnection(
+    String businessConnectionId,
+  ) async =>
+      BusinessConnection(
+        _o(
+          await call(
+            'getBusinessConnection',
+            {'business_connection_id': businessConnectionId},
+          ),
         ),
       );
 
@@ -3210,13 +3398,15 @@ class Bot {
       );
 
   /// Returns the Telegram Stars balance of a connected business account.
-  Future<Json> getBusinessAccountStarBalance(
+  Future<StarAmount> getBusinessAccountStarBalance(
     String businessConnectionId,
   ) async =>
-      _o(
-        await call(
-          'getBusinessAccountStarBalance',
-          {'business_connection_id': businessConnectionId},
+      StarAmount(
+        _o(
+          await call(
+            'getBusinessAccountStarBalance',
+            {'business_connection_id': businessConnectionId},
+          ),
         ),
       );
 
@@ -3233,7 +3423,7 @@ class Bot {
       );
 
   /// Lists gifts owned by a connected business account.
-  Future<Json> getBusinessAccountGifts(
+  Future<OwnedGifts> getBusinessAccountGifts(
     String businessConnectionId, {
     bool? excludeUnsaved,
     bool? excludeSaved,
@@ -3245,25 +3435,27 @@ class Bot {
     String? offset,
     int? limit,
   }) async =>
-      _o(
-        await call('getBusinessAccountGifts', {
-          'business_connection_id': businessConnectionId,
-          if (excludeUnsaved != null) 'exclude_unsaved': excludeUnsaved,
-          if (excludeSaved != null) 'exclude_saved': excludeSaved,
-          if (excludeUnlimited != null) 'exclude_unlimited': excludeUnlimited,
-          if (excludeLimitedUpgradable != null)
-            'exclude_limited_upgradable': excludeLimitedUpgradable,
-          if (excludeLimitedNonUpgradable != null)
-            'exclude_limited_non_upgradable': excludeLimitedNonUpgradable,
-          if (excludeUnique != null) 'exclude_unique': excludeUnique,
-          if (sortByPrice != null) 'sort_by_price': sortByPrice,
-          if (offset != null) 'offset': offset,
-          if (limit != null) 'limit': limit,
-        }),
+      OwnedGifts(
+        _o(
+          await call('getBusinessAccountGifts', {
+            'business_connection_id': businessConnectionId,
+            if (excludeUnsaved != null) 'exclude_unsaved': excludeUnsaved,
+            if (excludeSaved != null) 'exclude_saved': excludeSaved,
+            if (excludeUnlimited != null) 'exclude_unlimited': excludeUnlimited,
+            if (excludeLimitedUpgradable != null)
+              'exclude_limited_upgradable': excludeLimitedUpgradable,
+            if (excludeLimitedNonUpgradable != null)
+              'exclude_limited_non_upgradable': excludeLimitedNonUpgradable,
+            if (excludeUnique != null) 'exclude_unique': excludeUnique,
+            if (sortByPrice != null) 'sort_by_price': sortByPrice,
+            if (offset != null) 'offset': offset,
+            if (limit != null) 'limit': limit,
+          }),
+        ),
       );
 
   /// Lists gifts publicly displayed on a user's profile.
-  Future<Json> getUserGifts(
+  Future<OwnedGifts> getUserGifts(
     int userId, {
     bool? excludeUnlimited,
     bool? excludeLimitedUpgradable,
@@ -3274,25 +3466,27 @@ class Bot {
     String? offset,
     int? limit,
   }) async =>
-      _o(
-        await call('getUserGifts', {
-          'user_id': userId,
-          if (excludeUnlimited != null) 'exclude_unlimited': excludeUnlimited,
-          if (excludeLimitedUpgradable != null)
-            'exclude_limited_upgradable': excludeLimitedUpgradable,
-          if (excludeLimitedNonUpgradable != null)
-            'exclude_limited_non_upgradable': excludeLimitedNonUpgradable,
-          if (excludeUnique != null) 'exclude_unique': excludeUnique,
-          if (excludeFromBlockchain != null)
-            'exclude_from_blockchain': excludeFromBlockchain,
-          if (sortByPrice != null) 'sort_by_price': sortByPrice,
-          if (offset != null) 'offset': offset,
-          if (limit != null) 'limit': limit,
-        }),
+      OwnedGifts(
+        _o(
+          await call('getUserGifts', {
+            'user_id': userId,
+            if (excludeUnlimited != null) 'exclude_unlimited': excludeUnlimited,
+            if (excludeLimitedUpgradable != null)
+              'exclude_limited_upgradable': excludeLimitedUpgradable,
+            if (excludeLimitedNonUpgradable != null)
+              'exclude_limited_non_upgradable': excludeLimitedNonUpgradable,
+            if (excludeUnique != null) 'exclude_unique': excludeUnique,
+            if (excludeFromBlockchain != null)
+              'exclude_from_blockchain': excludeFromBlockchain,
+            if (sortByPrice != null) 'sort_by_price': sortByPrice,
+            if (offset != null) 'offset': offset,
+            if (limit != null) 'limit': limit,
+          }),
+        ),
       );
 
   /// Lists gifts publicly displayed on a channel chat's profile.
-  Future<Json> getChatGifts(
+  Future<OwnedGifts> getChatGifts(
     Object chatId, {
     bool? excludeUnlimited,
     bool? excludeLimitedUpgradable,
@@ -3303,21 +3497,23 @@ class Bot {
     String? offset,
     int? limit,
   }) async =>
-      _o(
-        await call('getChatGifts', {
-          'chat_id': chatId,
-          if (excludeUnlimited != null) 'exclude_unlimited': excludeUnlimited,
-          if (excludeLimitedUpgradable != null)
-            'exclude_limited_upgradable': excludeLimitedUpgradable,
-          if (excludeLimitedNonUpgradable != null)
-            'exclude_limited_non_upgradable': excludeLimitedNonUpgradable,
-          if (excludeUnique != null) 'exclude_unique': excludeUnique,
-          if (excludeFromBlockchain != null)
-            'exclude_from_blockchain': excludeFromBlockchain,
-          if (sortByPrice != null) 'sort_by_price': sortByPrice,
-          if (offset != null) 'offset': offset,
-          if (limit != null) 'limit': limit,
-        }),
+      OwnedGifts(
+        _o(
+          await call('getChatGifts', {
+            'chat_id': chatId,
+            if (excludeUnlimited != null) 'exclude_unlimited': excludeUnlimited,
+            if (excludeLimitedUpgradable != null)
+              'exclude_limited_upgradable': excludeLimitedUpgradable,
+            if (excludeLimitedNonUpgradable != null)
+              'exclude_limited_non_upgradable': excludeLimitedNonUpgradable,
+            if (excludeUnique != null) 'exclude_unique': excludeUnique,
+            if (excludeFromBlockchain != null)
+              'exclude_from_blockchain': excludeFromBlockchain,
+            if (sortByPrice != null) 'sort_by_price': sortByPrice,
+            if (offset != null) 'offset': offset,
+            if (limit != null) 'limit': limit,
+          }),
+        ),
       );
 
   /// Converts a regular gift owned by a business account into Telegram Stars.
@@ -3392,7 +3588,7 @@ class Bot {
       );
 
   /// Posts a new Telegram Story on behalf of a connected business account.
-  Future<Json> postStory(
+  Future<Story> postStory(
     String businessConnectionId,
     InputStoryContent content,
     int activePeriod, {
@@ -3405,27 +3601,29 @@ class Bot {
   }) async {
     final files = <String, InputFile>{};
     final contentJson = content.toJson(files);
-    return _o(
-      await call(
-        'postStory',
-        {
-          'business_connection_id': businessConnectionId,
-          'content': contentJson,
-          'active_period': activePeriod,
-          if (caption != null) 'caption': caption,
-          if (parseMode != null) 'parse_mode': parseMode.value,
-          if (captionEntities != null) 'caption_entities': captionEntities,
-          if (areas != null) 'areas': areas,
-          if (postToChatPage != null) 'post_to_chat_page': postToChatPage,
-          if (protectContent != null) 'protect_content': protectContent,
-        },
-        files,
+    return Story(
+      _o(
+        await call(
+          'postStory',
+          {
+            'business_connection_id': businessConnectionId,
+            'content': contentJson,
+            'active_period': activePeriod,
+            if (caption != null) 'caption': caption,
+            if (parseMode != null) 'parse_mode': parseMode.value,
+            if (captionEntities != null) 'caption_entities': captionEntities,
+            if (areas != null) 'areas': areas,
+            if (postToChatPage != null) 'post_to_chat_page': postToChatPage,
+            if (protectContent != null) 'protect_content': protectContent,
+          },
+          files,
+        ),
       ),
     );
   }
 
   /// Edits a previously posted Telegram Story.
-  Future<Json> editStory(
+  Future<Story> editStory(
     String businessConnectionId,
     int storyId,
     InputStoryContent content, {
@@ -3436,19 +3634,21 @@ class Bot {
   }) async {
     final files = <String, InputFile>{};
     final contentJson = content.toJson(files);
-    return _o(
-      await call(
-        'editStory',
-        {
-          'business_connection_id': businessConnectionId,
-          'story_id': storyId,
-          'content': contentJson,
-          if (caption != null) 'caption': caption,
-          if (parseMode != null) 'parse_mode': parseMode.value,
-          if (captionEntities != null) 'caption_entities': captionEntities,
-          if (areas != null) 'areas': areas,
-        },
-        files,
+    return Story(
+      _o(
+        await call(
+          'editStory',
+          {
+            'business_connection_id': businessConnectionId,
+            'story_id': storyId,
+            'content': contentJson,
+            if (caption != null) 'caption': caption,
+            if (parseMode != null) 'parse_mode': parseMode.value,
+            if (captionEntities != null) 'caption_entities': captionEntities,
+            if (areas != null) 'areas': areas,
+          },
+          files,
+        ),
       ),
     );
   }
@@ -3467,7 +3667,7 @@ class Bot {
   /// been posted (or reposted) by this bot. Requires the
   /// `can_manage_stories` business bot right on both accounts. [activePeriod]
   /// must be one of `6 * 3600`, `12 * 3600`, `86400`, or `2 * 86400` seconds.
-  Future<Json> repostStory(
+  Future<Story> repostStory(
     String businessConnectionId,
     int fromChatId,
     int fromStoryId,
@@ -3475,19 +3675,22 @@ class Bot {
     bool? postToChatPage,
     bool? protectContent,
   }) async =>
-      _o(
-        await call('repostStory', {
-          'business_connection_id': businessConnectionId,
-          'from_chat_id': fromChatId,
-          'from_story_id': fromStoryId,
-          'active_period': activePeriod,
-          if (postToChatPage != null) 'post_to_chat_page': postToChatPage,
-          if (protectContent != null) 'protect_content': protectContent,
-        }),
+      Story(
+        _o(
+          await call('repostStory', {
+            'business_connection_id': businessConnectionId,
+            'from_chat_id': fromChatId,
+            'from_story_id': fromStoryId,
+            'active_period': activePeriod,
+            if (postToChatPage != null) 'post_to_chat_page': postToChatPage,
+            if (protectContent != null) 'protect_content': protectContent,
+          }),
+        ),
       );
 
   /// Lists all gifts currently purchasable to send to users.
-  Future<Json> getAvailableGifts() async => _o(await call('getAvailableGifts'));
+  Future<Gifts> getAvailableGifts() async =>
+      Gifts(_o(await call('getAvailableGifts')));
 
   /// Sends a gift to a user or channel, optionally paid for in Telegram Stars.
   Future<bool> sendGift(
