@@ -3,7 +3,7 @@ description: >-
   A complete client for the Telegram Bot API. Methods
   for every endpoint + keyboards, media, webhooks, payments, stickers,
   business accounts, and etc.
-version: 2.0.0
+version: 2.0.1
 homepage: https://github.com/psdkjoon/ptgb
 repository: https://github.com/psdkjoon/ptgb
 issue_tracker: https://github.com/psdkjoon/ptgb/issues
@@ -16,5 +16,5 @@ environment:
   sdk: ^3.5.0
 
 dependencies:
-  penv: ^1.0.0
+  penv: ^2.0.0
   crypto: ^3.0.3

@@ -674,7 +674,7 @@ class Bot {
             },
             {
               'document': document,
-              if (thumbnail != null) 'thumbnail': thumbnail
+              if (thumbnail != null) 'thumbnail': thumbnail,
             },
           ),
         ),
@@ -2757,7 +2757,9 @@ class Bot {
       UserChatBoosts(
         _o(
           await call(
-              'getUserChatBoosts', {'chat_id': chatId, 'user_id': userId}),
+            'getUserChatBoosts',
+            {'chat_id': chatId, 'user_id': userId},
+          ),
         ),
       );
 
