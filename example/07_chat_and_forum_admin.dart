@@ -32,59 +32,41 @@ Future<void> main() async {
 
     if (text == '/mute' && targetUserId != null) {
       // Restrict the user from sending anything, for 10 minutes.
-      await bot.restrictChatMember(
-        chatId,
-        targetUserId,
-        const ChatPermissions(canSendMessages: false),
-        untilDate: DateTime.now()
+      await bot.restrictChatMember(chatId: chatId, userId: targetUserId, permissions: const ChatPermissions(canSendMessages: false), untilDate: DateTime.now()
                 .add(const Duration(minutes: 10))
                 .millisecondsSinceEpoch ~/
-            1000,
-      );
-      await bot.sendMessage(chatId, 'Muted for 10 minutes.');
+            1000,);
+      await bot.sendMessage(chatId: chatId, text: 'Muted for 10 minutes.');
     } else if (text == '/unmute' && targetUserId != null) {
       // Restore the chat's default permissions for this user.
-      await bot.restrictChatMember(
-        chatId,
-        targetUserId,
-        const ChatPermissions(
+      await bot.restrictChatMember(chatId: chatId, userId: targetUserId, permissions: const ChatPermissions(
           canSendMessages: true,
           canSendPhotos: true,
           canSendOtherMessages: true,
-        ),
-      );
-      await bot.sendMessage(chatId, 'Unmuted.');
+        ),);
+      await bot.sendMessage(chatId: chatId, text: 'Unmuted.');
     } else if (text == '/pin') {
       final messageId = repliedTo?.messageId;
       if (messageId != null) {
-        await bot.pinChatMessage(chatId, messageId);
-        await bot.sendMessage(chatId, 'Pinned.');
+        await bot.pinChatMessage(chatId: chatId, messageId: messageId);
+        await bot.sendMessage(chatId: chatId, text: 'Pinned.');
       }
     } else if (text == '/new_topic') {
       // Forum topics only work in supergroups with the "Topics" feature
       // enabled. This creates a new one with an orange icon.
       final topic = await bot.createForumTopic(
-        chatId,
-        'General Discussion',
+        chatId: chatId,
+        name: 'General Discussion',
         iconColor: 0xFF9500,
       );
-      await bot.sendMessage(
-        chatId,
-        'Created topic "${topic.name}" (id: ${topic.messageThreadId}).',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Created topic "${topic.name}" (id: ${topic.messageThreadId}).');
     } else if (text == '/chat_info') {
-      final info = await bot.getChat(chatId);
-      final memberCount = await bot.getChatMemberCount(chatId);
-      await bot.sendMessage(
-        chatId,
-        'Chat: ${info.title ?? info.firstName}\nMembers: $memberCount',
-      );
+      final info = await bot.getChat(chatId: chatId);
+      final memberCount = await bot.getChatMemberCount(chatId: chatId);
+      await bot.sendMessage(chatId: chatId, text: 'Chat: ${info.title ?? info.firstName}\nMembers: $memberCount');
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Reply to a user\'s message with /mute, /unmute, or /pin. '
-        'Try /new_topic or /chat_info too.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Reply to a user\'s message with /mute, /unmute, or /pin. '
+        'Try /new_topic or /chat_info too.',);
     }
   }
 }

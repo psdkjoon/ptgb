@@ -31,9 +31,9 @@ abstract class InputMedia {
   /// Whether [caption] is shown above the media instead of below it.
   final bool? showCaptionAboveMedia;
 
-  const InputMedia(
-    this.type,
-    this.media, {
+  const InputMedia({
+    required this.type,
+    required this.media,
     this.thumbnail,
     this.caption,
     this.parseMode,
@@ -73,16 +73,16 @@ class InputMediaPhoto extends InputMedia {
   /// Whether the photo is blurred until the user taps to reveal it.
   final bool? hasSpoiler;
 
-  const InputMediaPhoto(
-    InputFile media, {
+  const InputMediaPhoto({
+    required InputFile media,
     String? caption,
     ParseMode? parseMode,
     List<Json>? captionEntities,
     bool? showCaptionAboveMedia,
     this.hasSpoiler,
   }) : super(
-          'photo',
-          media,
+          type: 'photo',
+          media: media,
           caption: caption,
           parseMode: parseMode,
           captionEntities: captionEntities,
@@ -110,8 +110,8 @@ class InputMediaVideo extends InputMedia {
   /// Whether the video is blurred until the user taps to reveal it.
   final bool? hasSpoiler;
 
-  const InputMediaVideo(
-    InputFile media, {
+  const InputMediaVideo({
+    required InputFile media,
     InputFile? thumbnail,
     String? caption,
     ParseMode? parseMode,
@@ -123,8 +123,8 @@ class InputMediaVideo extends InputMedia {
     this.supportsStreaming,
     this.hasSpoiler,
   }) : super(
-          'video',
-          media,
+          type: 'video',
+          media: media,
           thumbnail: thumbnail,
           caption: caption,
           parseMode: parseMode,
@@ -156,8 +156,8 @@ class InputMediaAnimation extends InputMedia {
   /// Whether the animation is blurred until the user taps to reveal it.
   final bool? hasSpoiler;
 
-  const InputMediaAnimation(
-    InputFile media, {
+  const InputMediaAnimation({
+    required InputFile media,
     InputFile? thumbnail,
     String? caption,
     ParseMode? parseMode,
@@ -168,8 +168,8 @@ class InputMediaAnimation extends InputMedia {
     this.duration,
     this.hasSpoiler,
   }) : super(
-          'animation',
-          media,
+          type: 'animation',
+          media: media,
           thumbnail: thumbnail,
           caption: caption,
           parseMode: parseMode,
@@ -197,8 +197,8 @@ class InputMediaAudio extends InputMedia {
   /// The track title shown in the music player UI.
   final String? title;
 
-  const InputMediaAudio(
-    InputFile media, {
+  const InputMediaAudio({
+    required InputFile media,
     InputFile? thumbnail,
     String? caption,
     ParseMode? parseMode,
@@ -207,8 +207,8 @@ class InputMediaAudio extends InputMedia {
     this.performer,
     this.title,
   }) : super(
-          'audio',
-          media,
+          type: 'audio',
+          media: media,
           thumbnail: thumbnail,
           caption: caption,
           parseMode: parseMode,
@@ -240,7 +240,11 @@ abstract class InputPaidMedia {
   /// An optional custom thumbnail, shown before the media loads.
   final InputFile? thumbnail;
 
-  const InputPaidMedia(this.type, this.media, {this.thumbnail});
+  const InputPaidMedia({
+    required this.type,
+    required this.media,
+    this.thumbnail,
+  });
 
   /// The fields common to every [InputPaidMedia] subtype, keyed by the
   /// resolved [mediaRef]/[thumbRef] rather than the raw [InputFile].
@@ -266,7 +270,9 @@ abstract class InputPaidMedia {
 /// A photo used as one item of paid media in [Bot.sendPaidMedia].
 class InputPaidMediaPhoto extends InputPaidMedia {
   /// Creates a paid-media photo from [media].
-  const InputPaidMediaPhoto(InputFile media) : super('photo', media);
+  const InputPaidMediaPhoto({
+    required InputFile media,
+  }) : super(type: 'photo', media: media);
 
   @override
   Json extraJson() => {};
@@ -287,14 +293,14 @@ class InputPaidMediaVideo extends InputPaidMedia {
   final bool? supportsStreaming;
 
   /// Creates a paid-media video from [media].
-  const InputPaidMediaVideo(
-    InputFile media, {
+  const InputPaidMediaVideo({
+    required InputFile media,
     InputFile? thumbnail,
     this.width,
     this.height,
     this.duration,
     this.supportsStreaming,
-  }) : super('video', media, thumbnail: thumbnail);
+  }) : super(type: 'video', media: media, thumbnail: thumbnail);
 
   @override
   Json extraJson() => {
@@ -311,16 +317,16 @@ class InputMediaDocument extends InputMedia {
   /// as part of an album where the type should not be guessed from content.
   final bool? disableContentTypeDetection;
 
-  const InputMediaDocument(
-    InputFile media, {
+  const InputMediaDocument({
+    required InputFile media,
     InputFile? thumbnail,
     String? caption,
     ParseMode? parseMode,
     List<Json>? captionEntities,
     this.disableContentTypeDetection,
   }) : super(
-          'document',
-          media,
+          type: 'document',
+          media: media,
           thumbnail: thumbnail,
           caption: caption,
           parseMode: parseMode,

@@ -33,17 +33,12 @@ Future<void> main() async {
       // `draftId` is a locally-chosen identifier for this draft — pick a
       // fresh one each time you replace the draft's content, so you don't
       // accidentally overwrite a draft the user is mid-way through editing.
-      await bot.sendMessageDraft(chatId, nextDraftId++, text: suggestion);
-      await bot.sendMessage(
-        chatId,
-        'Drafted a reply for you — check the input field.',
-      );
+      await bot.sendMessageDraft(chatId: chatId, draftId: nextDraftId++, text: suggestion);
+      await bot.sendMessage(chatId: chatId, text: 'Drafted a reply for you — check the input field.');
     } else if (text == '/suggest_rich') {
       // The rich-message equivalent, for a draft built from blocks rather
       // than plain text — see 20_new_bot_api_concepts.dart for the block format.
-      await bot.sendRichMessageDraft(
-        chatId,
-        {
+      await bot.sendRichMessageDraft(chatId: chatId, richMessage: {
           'blocks': [
             {
               'type': 'text',
@@ -51,10 +46,9 @@ Future<void> main() async {
                   'Here\'s a suggested reply — feel free to edit before sending.',
             },
           ],
-        },
-      );
+        },);
     } else {
-      await bot.sendMessage(chatId, 'Try /suggest <text> or /suggest_rich.');
+      await bot.sendMessage(chatId: chatId, text: 'Try /suggest <text> or /suggest_rich.');
     }
   }
 }

@@ -30,8 +30,8 @@ class LoginUrl {
   final bool? requestWriteAccess;
 
   /// Creates login URL parameters targeting [url].
-  const LoginUrl(
-    this.url, {
+  const LoginUrl({
+    required this.url,
     this.forwardText,
     this.botUsername,
     this.requestWriteAccess,
@@ -148,23 +148,37 @@ class InlineKeyboardButton {
   });
 
   /// A button that opens [url] when tapped.
-  factory InlineKeyboardButton.url(String text, String url) =>
+  factory InlineKeyboardButton.url({
+    required String text,
+    required String url,
+  }) =>
       InlineKeyboardButton(text: text, url: url);
 
   /// A button that sends [data] back to your bot as a callback query.
-  factory InlineKeyboardButton.callback(String text, String data) =>
+  factory InlineKeyboardButton.callback({
+    required String text,
+    required String data,
+  }) =>
       InlineKeyboardButton(text: text, callbackData: data);
 
   /// A button that opens a Telegram Web App at [url].
-  factory InlineKeyboardButton.webApp(String text, String url) =>
+  factory InlineKeyboardButton.webApp({
+    required String text,
+    required String url,
+  }) =>
       InlineKeyboardButton(text: text, webAppUrl: url);
 
   /// The "Pay" button used on invoice messages.
-  factory InlineKeyboardButton.pay(String text) =>
+  factory InlineKeyboardButton.pay({
+    required String text,
+  }) =>
       InlineKeyboardButton(text: text, pay: true);
 
   /// A button that copies [copyText] to the user's clipboard when tapped.
-  factory InlineKeyboardButton.copy(String text, String copyText) =>
+  factory InlineKeyboardButton.copy({
+    required String text,
+    required String copyText,
+  }) =>
       InlineKeyboardButton(text: text, copyText: copyText);
 
   /// Converts this button to the JSON shape Telegram's API expects.
@@ -188,25 +202,36 @@ class InlineKeyboardButton {
 /// An inline keyboard attached below a message, made of rows of [InlineKeyboardButton]s.
 ///
 /// ```dart
-/// InlineKeyboardMarkup([
-///   [InlineKeyboardButton.callback('Yes', 'yes'), InlineKeyboardButton.callback('No', 'no')],
-///   [InlineKeyboardButton.url('Docs', 'https://core.telegram.org/bots/api')],
-/// ])
+/// InlineKeyboardMarkup(
+///   rows: [
+///     [
+///       InlineKeyboardButton.callback(text: 'Yes', data: 'yes'),
+///       InlineKeyboardButton.callback(text: 'No', data: 'no'),
+///     ],
+///     [InlineKeyboardButton.url(text: 'Docs', url: 'https://core.telegram.org/bots/api')],
+///   ],
+/// )
 /// ```
 class InlineKeyboardMarkup implements ReplyMarkup {
   /// The button grid — each inner list is one row.
   final List<List<InlineKeyboardButton>> rows;
 
   /// Creates a keyboard from explicit [rows].
-  const InlineKeyboardMarkup(this.rows);
+  const InlineKeyboardMarkup({
+    required this.rows,
+  });
 
   /// Shortcut for a keyboard with a single [row] of buttons.
-  factory InlineKeyboardMarkup.single(List<InlineKeyboardButton> row) =>
-      InlineKeyboardMarkup([row]);
+  factory InlineKeyboardMarkup.single({
+    required List<InlineKeyboardButton> row,
+  }) =>
+      InlineKeyboardMarkup(rows: [row]);
 
   /// Shortcut for stacking [buttons] one per row (a vertical list of buttons).
-  factory InlineKeyboardMarkup.column(List<InlineKeyboardButton> buttons) =>
-      InlineKeyboardMarkup(buttons.map((b) => [b]).toList());
+  factory InlineKeyboardMarkup.column({
+    required List<InlineKeyboardButton> buttons,
+  }) =>
+      InlineKeyboardMarkup(rows: buttons.map((b) => [b]).toList());
 
   @override
   Json toJson() => {
@@ -256,8 +281,8 @@ class KeyboardButtonRequestUsers {
   final bool? requestPhoto;
 
   /// Creates users-request parameters, identified by [requestId].
-  const KeyboardButtonRequestUsers(
-    this.requestId, {
+  const KeyboardButtonRequestUsers({
+    required this.requestId,
     this.userIsBot,
     this.userIsPremium,
     this.maxQuantity,
@@ -317,9 +342,9 @@ class KeyboardButtonRequestChat {
 
   /// Creates chat-request parameters, identified by [requestId]. [chatIsChannel]
   /// selects whether the picker offers channels or ordinary chats.
-  const KeyboardButtonRequestChat(
-    this.requestId,
-    this.chatIsChannel, {
+  const KeyboardButtonRequestChat({
+    required this.requestId,
+    required this.chatIsChannel,
     this.chatIsForum,
     this.chatHasUsername,
     this.chatIsCreated,
@@ -376,8 +401,8 @@ class KeyboardButton {
   /// Creates a keyboard button. Only one of [requestContact], [requestLocation],
   /// [requestPoll], [requestUsers], [requestChat], or [webAppUrl] should be
   /// set at a time.
-  const KeyboardButton(
-    this.text, {
+  const KeyboardButton({
+    required this.text,
     this.requestContact,
     this.requestLocation,
     this.requestPoll,
@@ -422,8 +447,8 @@ class ReplyKeyboardMarkup implements ReplyMarkup {
   final bool? selective;
 
   /// Creates a reply keyboard from [keyboard]'s rows of buttons.
-  const ReplyKeyboardMarkup(
-    this.keyboard, {
+  const ReplyKeyboardMarkup({
+    required this.keyboard,
     this.isPersistent,
     this.resizeKeyboard,
     this.oneTimeKeyboard,

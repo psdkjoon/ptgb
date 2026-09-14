@@ -28,9 +28,9 @@ abstract class InlineQueryResult {
 
   /// Creates a result of the given [type] and [id]. Prefer a concrete
   /// subtype's constructor.
-  const InlineQueryResult(
-    this.type,
-    this.id, {
+  const InlineQueryResult({
+    required this.type,
+    required this.id,
     this.replyMarkup,
     this.inputMessageContent,
   });
@@ -78,10 +78,10 @@ class InlineQueryResultArticle extends InlineQueryResult {
 
   /// Creates an article result. [inputMessageContent] is required since an
   /// article has no other content to send.
-  const InlineQueryResultArticle(
-    String id,
-    this.title,
-    InputMessageContent inputMessageContent, {
+  const InlineQueryResultArticle({
+    required String id,
+    required this.title,
+    required InputMessageContent inputMessageContent,
     InlineKeyboardMarkup? replyMarkup,
     this.url,
     this.description,
@@ -89,8 +89,8 @@ class InlineQueryResultArticle extends InlineQueryResult {
     this.thumbnailWidth,
     this.thumbnailHeight,
   }) : super(
-          'article',
-          id,
+          type: 'article',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -139,10 +139,10 @@ class InlineQueryResultPhoto extends InlineQueryResult {
   final bool? showCaptionAboveMedia;
 
   /// Creates a photo result fetched from [photoUrl].
-  const InlineQueryResultPhoto(
-    String id,
-    this.photoUrl,
-    this.thumbnailUrl, {
+  const InlineQueryResultPhoto({
+    required String id,
+    required this.photoUrl,
+    required this.thumbnailUrl,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.photoWidth,
@@ -154,8 +154,8 @@ class InlineQueryResultPhoto extends InlineQueryResult {
     this.captionEntities,
     this.showCaptionAboveMedia,
   }) : super(
-          'photo',
-          id,
+          type: 'photo',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -212,10 +212,10 @@ class InlineQueryResultGif extends InlineQueryResult {
   final bool? showCaptionAboveMedia;
 
   /// Creates a GIF result fetched from [gifUrl].
-  const InlineQueryResultGif(
-    String id,
-    this.gifUrl,
-    this.thumbnailUrl, {
+  const InlineQueryResultGif({
+    required String id,
+    required this.gifUrl,
+    required this.thumbnailUrl,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.gifWidth,
@@ -228,8 +228,8 @@ class InlineQueryResultGif extends InlineQueryResult {
     this.captionEntities,
     this.showCaptionAboveMedia,
   }) : super(
-          'gif',
-          id,
+          type: 'gif',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -287,10 +287,10 @@ class InlineQueryResultMpeg4Gif extends InlineQueryResult {
   final bool? showCaptionAboveMedia;
 
   /// Creates an MP4 animation result fetched from [mpeg4Url].
-  const InlineQueryResultMpeg4Gif(
-    String id,
-    this.mpeg4Url,
-    this.thumbnailUrl, {
+  const InlineQueryResultMpeg4Gif({
+    required String id,
+    required this.mpeg4Url,
+    required this.thumbnailUrl,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.mpeg4Width,
@@ -303,8 +303,8 @@ class InlineQueryResultMpeg4Gif extends InlineQueryResult {
     this.captionEntities,
     this.showCaptionAboveMedia,
   }) : super(
-          'mpeg4_gif',
-          id,
+          type: 'mpeg4_gif',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -367,12 +367,12 @@ class InlineQueryResultVideo extends InlineQueryResult {
   /// Creates a video result fetched from [videoUrl]. Since embedded videos
   /// (`'text/html'`) can't be sent directly to a chat, set
   /// [inputMessageContent] when using that MIME type.
-  const InlineQueryResultVideo(
-    String id,
-    this.videoUrl,
-    this.mimeType,
-    this.thumbnailUrl,
-    this.title, {
+  const InlineQueryResultVideo({
+    required String id,
+    required this.videoUrl,
+    required this.mimeType,
+    required this.thumbnailUrl,
+    required this.title,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.caption,
@@ -384,8 +384,8 @@ class InlineQueryResultVideo extends InlineQueryResult {
     this.videoDuration,
     this.description,
   }) : super(
-          'video',
-          id,
+          type: 'video',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -432,10 +432,10 @@ class InlineQueryResultAudio extends InlineQueryResult {
   final int? audioDuration;
 
   /// Creates an audio result fetched from [audioUrl].
-  const InlineQueryResultAudio(
-    String id,
-    this.audioUrl,
-    this.title, {
+  const InlineQueryResultAudio({
+    required String id,
+    required this.audioUrl,
+    required this.title,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.caption,
@@ -444,8 +444,8 @@ class InlineQueryResultAudio extends InlineQueryResult {
     this.performer,
     this.audioDuration,
   }) : super(
-          'audio',
-          id,
+          type: 'audio',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -483,10 +483,10 @@ class InlineQueryResultVoice extends InlineQueryResult {
   final int? voiceDuration;
 
   /// Creates a voice result fetched from [voiceUrl].
-  const InlineQueryResultVoice(
-    String id,
-    this.voiceUrl,
-    this.title, {
+  const InlineQueryResultVoice({
+    required String id,
+    required this.voiceUrl,
+    required this.title,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.caption,
@@ -494,8 +494,8 @@ class InlineQueryResultVoice extends InlineQueryResult {
     this.captionEntities,
     this.voiceDuration,
   }) : super(
-          'voice',
-          id,
+          type: 'voice',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -544,11 +544,11 @@ class InlineQueryResultDocument extends InlineQueryResult {
   final int? thumbnailHeight;
 
   /// Creates a document result fetched from [documentUrl].
-  const InlineQueryResultDocument(
-    String id,
-    this.title,
-    this.documentUrl,
-    this.mimeType, {
+  const InlineQueryResultDocument({
+    required String id,
+    required this.title,
+    required this.documentUrl,
+    required this.mimeType,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.caption,
@@ -559,8 +559,8 @@ class InlineQueryResultDocument extends InlineQueryResult {
     this.thumbnailWidth,
     this.thumbnailHeight,
   }) : super(
-          'document',
-          id,
+          type: 'document',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -613,11 +613,11 @@ class InlineQueryResultLocation extends InlineQueryResult {
   final int? thumbnailHeight;
 
   /// Creates a location result at [latitude]/[longitude].
-  const InlineQueryResultLocation(
-    String id,
-    this.latitude,
-    this.longitude,
-    this.title, {
+  const InlineQueryResultLocation({
+    required String id,
+    required this.latitude,
+    required this.longitude,
+    required this.title,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.horizontalAccuracy,
@@ -628,8 +628,8 @@ class InlineQueryResultLocation extends InlineQueryResult {
     this.thumbnailWidth,
     this.thumbnailHeight,
   }) : super(
-          'location',
-          id,
+          type: 'location',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -687,12 +687,12 @@ class InlineQueryResultVenue extends InlineQueryResult {
   final int? thumbnailHeight;
 
   /// Creates a venue result.
-  const InlineQueryResultVenue(
-    String id,
-    this.latitude,
-    this.longitude,
-    this.title,
-    this.address, {
+  const InlineQueryResultVenue({
+    required String id,
+    required this.latitude,
+    required this.longitude,
+    required this.title,
+    required this.address,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.foursquareId,
@@ -703,8 +703,8 @@ class InlineQueryResultVenue extends InlineQueryResult {
     this.thumbnailWidth,
     this.thumbnailHeight,
   }) : super(
-          'venue',
-          id,
+          type: 'venue',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -749,10 +749,10 @@ class InlineQueryResultContact extends InlineQueryResult {
   final int? thumbnailHeight;
 
   /// Creates a contact result.
-  const InlineQueryResultContact(
-    String id,
-    this.phoneNumber,
-    this.firstName, {
+  const InlineQueryResultContact({
+    required String id,
+    required this.phoneNumber,
+    required this.firstName,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.lastName,
@@ -761,8 +761,8 @@ class InlineQueryResultContact extends InlineQueryResult {
     this.thumbnailWidth,
     this.thumbnailHeight,
   }) : super(
-          'contact',
-          id,
+          type: 'contact',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -785,11 +785,11 @@ class InlineQueryResultGame extends InlineQueryResult {
   final String gameShortName;
 
   /// Creates a game result for [gameShortName].
-  const InlineQueryResultGame(
-    String id,
-    this.gameShortName, {
+  const InlineQueryResultGame({
+    required String id,
+    required this.gameShortName,
     InlineKeyboardMarkup? replyMarkup,
-  }) : super('game', id, replyMarkup: replyMarkup);
+  }) : super(type: 'game', id: id, replyMarkup: replyMarkup);
 
   @override
   Json extraJson() => {'game_short_name': gameShortName};
@@ -801,14 +801,14 @@ class InlineQueryResultSticker extends InlineQueryResult {
   final String stickerUrl;
 
   /// Creates a sticker result fetched from [stickerUrl].
-  const InlineQueryResultSticker(
-    String id,
-    this.stickerUrl, {
+  const InlineQueryResultSticker({
+    required String id,
+    required this.stickerUrl,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
   }) : super(
-          'sticker',
-          id,
+          type: 'sticker',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -841,9 +841,9 @@ class InlineQueryResultCachedPhoto extends InlineQueryResult {
   final bool? showCaptionAboveMedia;
 
   /// Creates a cached-photo result from [photoFileId].
-  const InlineQueryResultCachedPhoto(
-    String id,
-    this.photoFileId, {
+  const InlineQueryResultCachedPhoto({
+    required String id,
+    required this.photoFileId,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.title,
@@ -853,8 +853,8 @@ class InlineQueryResultCachedPhoto extends InlineQueryResult {
     this.captionEntities,
     this.showCaptionAboveMedia,
   }) : super(
-          'photo',
-          id,
+          type: 'photo',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -893,9 +893,9 @@ class InlineQueryResultCachedGif extends InlineQueryResult {
   final bool? showCaptionAboveMedia;
 
   /// Creates a cached-GIF result from [gifFileId].
-  const InlineQueryResultCachedGif(
-    String id,
-    this.gifFileId, {
+  const InlineQueryResultCachedGif({
+    required String id,
+    required this.gifFileId,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.title,
@@ -904,8 +904,8 @@ class InlineQueryResultCachedGif extends InlineQueryResult {
     this.captionEntities,
     this.showCaptionAboveMedia,
   }) : super(
-          'gif',
-          id,
+          type: 'gif',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -944,9 +944,9 @@ class InlineQueryResultCachedMpeg4Gif extends InlineQueryResult {
   final bool? showCaptionAboveMedia;
 
   /// Creates a cached-animation result from [mpeg4FileId].
-  const InlineQueryResultCachedMpeg4Gif(
-    String id,
-    this.mpeg4FileId, {
+  const InlineQueryResultCachedMpeg4Gif({
+    required String id,
+    required this.mpeg4FileId,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.title,
@@ -955,8 +955,8 @@ class InlineQueryResultCachedMpeg4Gif extends InlineQueryResult {
     this.captionEntities,
     this.showCaptionAboveMedia,
   }) : super(
-          'mpeg4_gif',
-          id,
+          type: 'mpeg4_gif',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -979,14 +979,14 @@ class InlineQueryResultCachedSticker extends InlineQueryResult {
   final String stickerFileId;
 
   /// Creates a cached-sticker result from [stickerFileId].
-  const InlineQueryResultCachedSticker(
-    String id,
-    this.stickerFileId, {
+  const InlineQueryResultCachedSticker({
+    required String id,
+    required this.stickerFileId,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
   }) : super(
-          'sticker',
-          id,
+          type: 'sticker',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -1016,10 +1016,10 @@ class InlineQueryResultCachedDocument extends InlineQueryResult {
   final List<Json>? captionEntities;
 
   /// Creates a cached-document result from [documentFileId].
-  const InlineQueryResultCachedDocument(
-    String id,
-    this.title,
-    this.documentFileId, {
+  const InlineQueryResultCachedDocument({
+    required String id,
+    required this.title,
+    required this.documentFileId,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.description,
@@ -1027,8 +1027,8 @@ class InlineQueryResultCachedDocument extends InlineQueryResult {
     this.parseMode,
     this.captionEntities,
   }) : super(
-          'document',
-          id,
+          type: 'document',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -1068,10 +1068,10 @@ class InlineQueryResultCachedVideo extends InlineQueryResult {
   final bool? showCaptionAboveMedia;
 
   /// Creates a cached-video result from [videoFileId].
-  const InlineQueryResultCachedVideo(
-    String id,
-    this.videoFileId,
-    this.title, {
+  const InlineQueryResultCachedVideo({
+    required String id,
+    required this.videoFileId,
+    required this.title,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.description,
@@ -1080,8 +1080,8 @@ class InlineQueryResultCachedVideo extends InlineQueryResult {
     this.captionEntities,
     this.showCaptionAboveMedia,
   }) : super(
-          'video',
-          id,
+          type: 'video',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -1117,18 +1117,18 @@ class InlineQueryResultCachedVoice extends InlineQueryResult {
   final List<Json>? captionEntities;
 
   /// Creates a cached-voice result from [voiceFileId].
-  const InlineQueryResultCachedVoice(
-    String id,
-    this.voiceFileId,
-    this.title, {
+  const InlineQueryResultCachedVoice({
+    required String id,
+    required this.voiceFileId,
+    required this.title,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.caption,
     this.parseMode,
     this.captionEntities,
   }) : super(
-          'voice',
-          id,
+          type: 'voice',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );
@@ -1158,17 +1158,17 @@ class InlineQueryResultCachedAudio extends InlineQueryResult {
   final List<Json>? captionEntities;
 
   /// Creates a cached-audio result from [audioFileId].
-  const InlineQueryResultCachedAudio(
-    String id,
-    this.audioFileId, {
+  const InlineQueryResultCachedAudio({
+    required String id,
+    required this.audioFileId,
     InlineKeyboardMarkup? replyMarkup,
     InputMessageContent? inputMessageContent,
     this.caption,
     this.parseMode,
     this.captionEntities,
   }) : super(
-          'audio',
-          id,
+          type: 'audio',
+          id: id,
           replyMarkup: replyMarkup,
           inputMessageContent: inputMessageContent,
         );

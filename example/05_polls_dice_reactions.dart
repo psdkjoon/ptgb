@@ -27,41 +27,27 @@ Future<void> main() async {
     // acknowledgement, without sending a new message.
     final messageId = update.messageId;
     if (update.message != null && chatId != null && messageId != null) {
-      await bot.setMessageReaction(
-        chatId,
-        messageId,
-        reaction: [ReactionType.emoji('👍')],
-      );
+      await bot.setMessageReaction(chatId: chatId, messageId: messageId, reaction: [ReactionType.emoji(emoji: '👍')]);
     }
 
     if (text == null || chatId == null) continue;
 
     if (text == '/poll') {
       // A regular poll — every option is just an opinion, none is "correct".
-      await bot.sendPoll(
-        chatId,
-        'What\'s your favorite season?',
-        ['Spring', 'Summer', 'Autumn', 'Winter'],
-      );
+      await bot.sendPoll(chatId: chatId, question: 'What\'s your favorite season?', options: ['Spring', 'Summer', 'Autumn', 'Winter']);
     } else if (text == '/quiz') {
       // A quiz poll — exactly one option is correct, revealed after voting.
-      await bot.sendPoll(
-        chatId,
-        'What language is ptgb written in?',
-        ['Python', 'Dart', 'Go', 'Rust'],
-        type: PollType.quiz,
-        correctOptionId: 1, // zero-based index — "Dart"
-      );
+      await bot.sendPoll(chatId: chatId, question: 'What language is ptgb written in?', options: ['Python', 'Dart', 'Go', 'Rust'], type: PollType.quiz, correctOptionId: 1 /* zero-based index — "Dart" */);
     } else if (text == '/dice') {
       // Telegram rolls the dice server-side and tells us the result —
       // this is provably fair, unlike generating a random number ourselves.
-      final result = await bot.sendDice(chatId);
+      final result = await bot.sendDice(chatId: chatId);
       final value = result.dice!.value;
-      await bot.sendMessage(chatId, 'You rolled: $value');
+      await bot.sendMessage(chatId: chatId, text: 'You rolled: $value');
     } else if (text == '/basketball') {
-      await bot.sendDice(chatId, emoji: DiceEmoji.basketball);
+      await bot.sendDice(chatId: chatId, emoji: DiceEmoji.basketball);
     } else {
-      await bot.sendMessage(chatId, 'Try /poll, /quiz, /dice, or /basketball!');
+      await bot.sendMessage(chatId: chatId, text: 'Try /poll, /quiz, /dice, or /basketball!');
     }
   }
 }

@@ -33,42 +33,30 @@ Future<void> main() async {
 
     if (text.startsWith('/set_info ')) {
       final name = text.substring('/set_info '.length).trim();
-      final set = await bot.getStickerSet(name);
+      final set = await bot.getStickerSet(name: name);
       final stickers = set.stickers;
-      await bot.sendMessage(
-        chatId,
-        '${set.title} — ${stickers.length} sticker(s), type: ${set.stickerType}',
-      );
+      await bot.sendMessage(chatId: chatId, text: '${set.title} — ${stickers.length} sticker(s), type: ${set.stickerType}');
     } else if (text == '/topic_icons') {
       // The fixed palette of icon stickers Telegram offers for forum topics.
       final icons = await bot.getForumTopicIconStickers();
-      await bot.sendMessage(
-        chatId,
-        '${icons.length} forum topic icons available.',
-      );
+      await bot.sendMessage(chatId: chatId, text: '${icons.length} forum topic icons available.');
     } else if (text.startsWith('/resolve_emoji ')) {
       final customEmojiId = text.substring('/resolve_emoji '.length).trim();
-      final stickers = await bot.getCustomEmojiStickers([customEmojiId]);
+      final stickers = await bot.getCustomEmojiStickers(customEmojiIds: [customEmojiId]);
       if (stickers.isEmpty) {
-        await bot.sendMessage(chatId, 'Unknown custom emoji ID.');
+        await bot.sendMessage(chatId: chatId, text: 'Unknown custom emoji ID.');
       } else {
-        await bot.sendMessage(
-          chatId,
-          'Resolved to sticker: ${stickers.first.fileId}',
-        );
+        await bot.sendMessage(chatId: chatId, text: 'Resolved to sticker: ${stickers.first.fileId}');
       }
     } else if (text.startsWith('/retag ')) {
       // Re-tags an existing sticker (identified by its own `file_id`,
       // *not* the set's name) with new search emoji and keywords.
       final fileId = text.substring('/retag '.length).trim();
-      await bot.setStickerEmojiList(fileId, ['😀', '🙂']);
-      await bot.setStickerKeywords(fileId, keywords: ['happy', 'smile']);
-      await bot.sendMessage(chatId, 'Sticker re-tagged.');
+      await bot.setStickerEmojiList(sticker: fileId, emojiList: ['😀', '🙂']);
+      await bot.setStickerKeywords(sticker: fileId, keywords: ['happy', 'smile']);
+      await bot.sendMessage(chatId: chatId, text: 'Sticker re-tagged.');
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /set_info <name>, /topic_icons, /resolve_emoji <id>, or /retag <file_id>.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /set_info <name>, /topic_icons, /resolve_emoji <id>, or /retag <file_id>.');
     }
   }
 }

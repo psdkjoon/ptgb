@@ -1,8 +1,7 @@
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
-
 import 'core.dart';
+import 'hashing.dart';
 import 'models.dart';
 
 /// The parsed, signature-verified `initData` string sent by a Telegram Mini
@@ -19,7 +18,10 @@ class WebAppInitData {
   final bool isValid;
 
   /// Wraps parsed [fields] with their [isValid] verification result.
-  const WebAppInitData(this.fields, this.isValid);
+  const WebAppInitData({
+    required this.fields,
+    required this.isValid,
+  });
 
   /// The Telegram user who opened the Mini App, if present.
   User? get user => _wrap('user', User.new);
@@ -74,17 +76,24 @@ class WebAppInitData {
 WebAppInitData verifyWebAppInitData(String initData, String botToken) {
   final params = Uri.splitQueryString(initData);
   final receivedHash = params['hash'];
-  if (receivedHash == null) return WebAppInitData(params, false);
+  if (receivedHash == null) {
+    return WebAppInitData(fields: params, isValid: false);
+  }
 
   final entries = params.entries.where((e) => e.key != 'hash').toList()
     ..sort((a, b) => a.key.compareTo(b.key));
   final dataCheckString = entries.map((e) => '${e.key}=${e.value}').join('\n');
 
-  final secretKey = Hmac(sha256, utf8.encode('WebAppData'))
-      .convert(utf8.encode(botToken))
-      .bytes;
-  final computedHash =
-      Hmac(sha256, secretKey).convert(utf8.encode(dataCheckString)).toString();
+  final secretKey = hmacSha256(
+    utf8.encode('WebAppData'),
+    utf8.encode(botToken),
+  );
+  final computedHash = _toHex(
+    hmacSha256(secretKey, utf8.encode(dataCheckString)),
+  );
 
-  return WebAppInitData(params, computedHash == receivedHash);
+  return WebAppInitData(fields: params, isValid: computedHash == receivedHash);
 }
+
+String _toHex(List<int> bytes) =>
+    bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();

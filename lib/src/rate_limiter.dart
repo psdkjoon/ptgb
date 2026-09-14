@@ -52,7 +52,12 @@ class RateLimiter {
   /// per-chat limit; omit it for chat-less methods like `getMe`.
   ///
   /// Called automatically by [Bot.call] once a [RateLimiter] has been
-  /// passed to [Bot]'s constructor — you generally don't need to call this yourself.
+  /// passed to [Bot]'s constructor — you generally don't need to call this
+  /// yourself.
+  ///
+  /// Both the global and per-chat slots are reserved synchronously, before
+  /// awaiting either, so that concurrent [acquire] calls don't race for the
+  /// same gate.
   Future<void> acquire([Object? chatId]) async {
     final chatGate = chatId == null
         ? null
@@ -60,8 +65,6 @@ class RateLimiter {
             chatId,
             () => _MinIntervalGate(1 / perChatPerSecond),
           );
-    // Reserve both slots synchronously (before awaiting either) so
-    // concurrent acquire() calls don't race on the same gate.
     final globalWait = _global.reserve();
     final chatWait = chatGate?.reserve();
     await globalWait;

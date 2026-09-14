@@ -40,7 +40,7 @@ Future<void> main() async {
   final bot = Bot();
 
   // --- One-time setup ------------------------------------------------------
-  await bot.setMyCommands([
+  await bot.setMyCommands(commands: [
     {'command': 'menu', 'description': 'Show everything this bot can do'},
     {'command': 'counter', 'description': 'A live-editing +/- counter'},
     {'command': 'photo', 'description': 'Send a photo + an album'},
@@ -48,7 +48,7 @@ Future<void> main() async {
     {'command': 'poll', 'description': 'Send a quiz poll'},
     {'command': 'dice', 'description': 'Roll an animated die'},
     {'command': 'buy', 'description': 'Buy something with Telegram Stars'},
-  ]);
+  ],);
   await bot.setMyDescription(
     description:
         'A ptgb demo bot showcasing keyboards, media, polls, payments, and more.',
@@ -74,12 +74,9 @@ Future<void> main() async {
       } else if (update.inlineQuery != null) {
         await _handleInlineQuery(bot, update);
       } else if (update.preCheckoutQuery != null) {
-        await bot.answerPreCheckoutQuery(
-          update.preCheckoutQuery!.id,
-          true,
-        );
+        await bot.answerPreCheckoutQuery(preCheckoutQueryId: update.preCheckoutQuery!.id, ok: true);
       } else if (update.message?.successfulPayment != null) {
-        await bot.sendMessage(update.chatId!, '✅ Payment received, thank you!');
+        await bot.sendMessage(chatId: update.chatId!, text: '✅ Payment received, thank you!');
       } else if (update.text != null) {
         await _handleCommand(bot, update);
       }
@@ -101,82 +98,47 @@ Future<void> _handleCommand(Bot bot, Update update) async {
   switch (command) {
     case '/menu':
     case '/start':
-      await bot.sendMessage(
-        chatId,
-        '*God Mode Demo Bot* 🤖\n\nTry any of the commands below:',
-        parseMode: ParseMode.markdown,
-        replyMarkup: InlineKeyboardMarkup([
-          [InlineKeyboardButton.callback('🔢 Counter', 'menu:counter')],
-          [InlineKeyboardButton.callback('📷 Photos', 'menu:photo')],
-          [InlineKeyboardButton.callback('📍 Location', 'menu:location')],
-          [InlineKeyboardButton.callback('❓ Quiz', 'menu:poll')],
-          [InlineKeyboardButton.callback('🎲 Dice', 'menu:dice')],
-          [InlineKeyboardButton.callback('⭐ Buy something', 'menu:buy')],
-        ]),
-      );
+      await bot.sendMessage(chatId: chatId, text: '*God Mode Demo Bot* 🤖\n\nTry any of the commands below:', parseMode: ParseMode.markdown, replyMarkup: InlineKeyboardMarkup(rows: [
+          [InlineKeyboardButton.callback(text: '🔢 Counter', data: 'menu:counter')],
+          [InlineKeyboardButton.callback(text: '📷 Photos', data: 'menu:photo')],
+          [InlineKeyboardButton.callback(text: '📍 Location', data: 'menu:location')],
+          [InlineKeyboardButton.callback(text: '❓ Quiz', data: 'menu:poll')],
+          [InlineKeyboardButton.callback(text: '🎲 Dice', data: 'menu:dice')],
+          [InlineKeyboardButton.callback(text: '⭐ Buy something', data: 'menu:buy')],
+        ],),);
 
     case '/counter':
-      final sent = await bot.sendMessage(
-        chatId,
-        'Count: 0',
-        replyMarkup: _counterKeyboard(),
-      );
+      final sent = await bot.sendMessage(chatId: chatId, text: 'Count: 0', replyMarkup: _counterKeyboard());
       _counters['$chatId:${sent.messageId}'] = 0;
 
     case '/photo':
       // Show a "sending photo..." indicator while we prepare the album.
-      await bot.sendChatAction(chatId, ChatAction.uploadPhoto);
-      await bot.sendPhoto(
-        chatId,
-        InputFile.url('https://picsum.photos/800/600'),
-        caption: 'A single photo.',
-      );
-      await bot.sendMediaGroup(chatId, [
-        InputMediaPhoto(InputFile.url('https://picsum.photos/seed/a/600')),
+      await bot.sendChatAction(chatId: chatId, action: ChatAction.uploadPhoto);
+      await bot.sendPhoto(chatId: chatId, photo: InputFile.url(url: 'https://picsum.photos/800/600'), caption: 'A single photo.');
+      await bot.sendMediaGroup(chatId: chatId, media: [
+        InputMediaPhoto(media: InputFile.url(url: 'https://picsum.photos/seed/a/600')),
         InputMediaPhoto(
-          InputFile.url('https://picsum.photos/seed/b/600'),
+          media: InputFile.url(url: 'https://picsum.photos/seed/b/600'),
           caption: 'Album item 2',
         ),
-      ]);
+      ],);
 
     case '/location':
-      await bot.sendVenue(
-        chatId,
-        41.0082,
-        28.9784,
-        'Hagia Sophia',
-        'Sultan Ahmet, Istanbul, Turkey',
-      );
+      await bot.sendVenue(chatId: chatId, latitude: 41.0082, longitude: 28.9784, title: 'Hagia Sophia', address: 'Sultan Ahmet, Istanbul, Turkey');
 
     case '/poll':
-      await bot.sendPoll(
-        chatId,
-        'Which of these is a Telegram Bot API method?',
-        ['sendMessage', 'sendEmail', 'sendSMS'],
-        type: PollType.quiz,
-        correctOptionId: 0,
-      );
+      await bot.sendPoll(chatId: chatId, question: 'Which of these is a Telegram Bot API method?', options: ['sendMessage', 'sendEmail', 'sendSMS'], type: PollType.quiz, correctOptionId: 0);
 
     case '/dice':
-      await bot.sendDice(chatId, emoji: DiceEmoji.dart);
+      await bot.sendDice(chatId: chatId, emoji: DiceEmoji.dart);
 
     case '/buy':
-      await bot.sendInvoice(
-        chatId,
-        'Supporter Badge',
-        'A small way to support this demo bot.',
-        'supporter_badge_v1',
-        'XTR',
-        [
+      await bot.sendInvoice(chatId: chatId, title: 'Supporter Badge', description: 'A small way to support this demo bot.', payload: 'supporter_badge_v1', currency: 'XTR', prices: [
           {'label': 'Supporter Badge', 'amount': 25},
-        ],
-      );
+        ],);
 
     default:
-      await bot.sendMessage(
-        chatId,
-        'Unknown command — try /menu to see what I can do.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Unknown command — try /menu to see what I can do.');
   }
 }
 
@@ -184,11 +146,11 @@ Future<void> _handleCommand(Bot bot, Update update) async {
 // Callback query handling (inline keyboard button taps)
 // ---------------------------------------------------------------------------
 
-InlineKeyboardMarkup _counterKeyboard() => InlineKeyboardMarkup.single([
-      InlineKeyboardButton.callback('➖', 'counter:dec'),
-      InlineKeyboardButton.callback('🔄', 'counter:reset'),
-      InlineKeyboardButton.callback('➕', 'counter:inc'),
-    ]);
+InlineKeyboardMarkup _counterKeyboard() => InlineKeyboardMarkup.single(row: [
+      InlineKeyboardButton.callback(text: '➖', data: 'counter:dec'),
+      InlineKeyboardButton.callback(text: '🔄', data: 'counter:reset'),
+      InlineKeyboardButton.callback(text: '➕', data: 'counter:inc'),
+    ],);
 
 Future<void> _handleCallback(Bot bot, Update update) async {
   final callback = update.callbackQuery!;
@@ -199,7 +161,7 @@ Future<void> _handleCallback(Bot bot, Update update) async {
   // The main /menu screen re-dispatches to the same logic as the slash
   // commands, so tapping a button behaves identically to typing the command.
   if (data.startsWith('menu:')) {
-    await bot.answerCallbackQuery(callback.id);
+    await bot.answerCallbackQuery(callbackQueryId: callback.id);
     // Build a minimal synthetic "message" update carrying the button's
     // target command, so `_handleCommand` can handle it uniformly.
     final syntheticMessage = <String, dynamic>{
@@ -222,13 +184,8 @@ Future<void> _handleCallback(Bot bot, Update update) async {
       _ => 0,
     };
     _counters[key] = next;
-    await bot.answerCallbackQuery(callback.id);
-    await bot.editMessageText(
-      'Count: $next',
-      chatId: chatId,
-      messageId: messageId,
-      replyMarkup: _counterKeyboard(),
-    );
+    await bot.answerCallbackQuery(callbackQueryId: callback.id);
+    await bot.editMessageText(text: 'Count: $next', chatId: chatId, messageId: messageId, replyMarkup: _counterKeyboard());
   }
 }
 
@@ -240,13 +197,7 @@ Future<void> _handleInlineQuery(Bot bot, Update update) async {
   final query = update.inlineQuery!;
   final searchText = query.query.trim();
 
-  await bot.answerInlineQuery(query.id, [
-    InlineQueryResultArticle(
-      '1',
-      'Send: "$searchText"',
-      InputTextMessageContent(
-        searchText.isEmpty ? 'Hello from god mode!' : searchText,
-      ),
-    ),
-  ]);
+  await bot.answerInlineQuery(inlineQueryId: query.id, results: [
+    InlineQueryResultArticle(id: '1', title: 'Send: "$searchText"', inputMessageContent: InputTextMessageContent(messageText: searchText.isEmpty ? 'Hello from god mode!' : searchText)),
+  ],);
 }

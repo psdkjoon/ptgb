@@ -41,15 +41,12 @@ Future<void> main() async {
     if (message.text == '/whoami') {
       final user = sender;
       if (user == null) {
-        await bot.sendMessage(message.chat.id, "I can't tell who sent that.");
+        await bot.sendMessage(chatId: message.chat.id, text: "I can't tell who sent that.");
         continue;
       }
-      await bot.sendMessage(
-        message.chat.id,
-        'You are ${user.fullName}'
+      await bot.sendMessage(chatId: message.chat.id, text: 'You are ${user.fullName}'
         '${user.username != null ? ' (@${user.username})' : ''}, '
-        'user ID ${user.id}, writing in a ${message.chat.type} chat.',
-      );
+        'user ID ${user.id}, writing in a ${message.chat.type} chat.',);
       continue;
     }
 
@@ -58,11 +55,8 @@ Future<void> main() async {
     final photo = message.photo;
     if (photo != null && photo.isNotEmpty) {
       final biggest = photo.last; // Telegram lists sizes smallest-to-largest.
-      await bot.sendMessage(
-        message.chat.id,
-        'Got a photo! Largest size is ${biggest.width}x${biggest.height}, '
-        'file_id ${biggest.fileId}.',
-      );
+      await bot.sendMessage(chatId: message.chat.id, text: 'Got a photo! Largest size is ${biggest.width}x${biggest.height}, '
+        'file_id ${biggest.fileId}.',);
     }
 
     // If a field doesn't have a typed getter yet, `.raw` is always there —

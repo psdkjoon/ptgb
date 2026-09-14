@@ -54,7 +54,7 @@ Future<void> main() async {
     // Not every update has text (e.g. a photo, a button press) or a chat
     // (e.g. an inline query) — always guard against null before using them.
     if (text != null && chatId != null) {
-      await bot.sendMessage(chatId, 'You said: $text');
+      await bot.sendMessage(chatId: chatId, text: 'You said: $text');
     }
   }
 }

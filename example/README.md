@@ -9,7 +9,10 @@ bots in general — each one introduces a new concept on top of the last.
 1. Message [@BotFather](https://t.me/BotFather) on Telegram, send `/newbot`,
    and copy the token it gives you.
 2. Create a file named `.env` in the **root of this package** (next to
-   `pubspec.yaml`) containing:
+   `pubspec.yaml`). If you skip this, running any example creates one for
+   you automatically with step-by-step instructions inside — just open it,
+   paste your token after `TOKEN=`, and run the example again. Or create it
+   yourself up front:
    ```
    TOKEN=123456:ABC-your-token-here
    ```
@@ -72,6 +75,39 @@ the token from `.env` instead, which is the approach to actually use.
 | `39_message_drafts.dart` | Pre-filling a chat's input field without sending, via `sendMessageDraft`/`sendRichMessageDraft`. |
 | `40_custom_emoji_and_sticker_details.dart` | Looking up sticker sets and custom emoji, and re-tagging an existing sticker's search metadata. |
 | `41_inline_query_result_gallery.dart` | Reference gallery: one of every `InlineQueryResult*` (including `Cached*` variants) and `InputMessageContent*` subtype. |
+| `42_bot_storage.dart` | Remembering users and chats between runs with the built-in `BotStorage`, backed by `pdata` — no database needed. |
+
+## Full bot projects
+
+Everything above demonstrates one feature at a time. The examples below are
+different: each is a complete, standalone bot you could actually deploy —
+combining several features into one real product, the way you'd actually
+build something. All state that needs to survive a restart uses
+`BotStorage`; a few reach out to a real third-party API (noted below) using
+nothing but `dart:io`'s built-in `HttpClient`, so no extra dependencies are
+needed beyond what's already in `pubspec.yaml`.
+
+| File | What it is |
+| --- | --- |
+| `43_hidden_chat_bot.dart` | Anonymous random-pairing chat — `/find` queues you, two waiting users are matched, messages relay both ways with no names shown. |
+| `44_unit_converter_bot.dart` | Length/weight/temperature/currency conversion, usable inline (`@yourbot 10 km to mi`) in any chat. |
+| `45_gif_search_bot.dart` | Inline GIF search backed by the real Tenor API (needs a free `TENOR_API_KEY`). |
+| `46_shop_catalog_bot.dart` | Product catalog with inline-keyboard browsing, a persistent per-user cart, and Stars checkout — including the `answerPreCheckoutQuery` step real payments require. |
+| `47_todo_list_bot.dart` | Personal todo list with inline toggle/delete buttons that edit the list message in place. |
+| `48_survey_bot.dart` | Admin-authored multi-question surveys delivered as real (non-anonymous) Telegram polls, tallied automatically. |
+| `49_url_shortener_bot.dart` | Shortens URLs to a `t.me` deep link, tracks clicks, works inline. |
+| `50_moderation_bot.dart` | Auto-deletes links from non-admins, tracks warnings, auto-mutes at 3 — plus manual `/warn`, `/mute`, `/ban` by replying to a message. |
+| `51_expense_splitter_bot.dart` | Group "who owes who" tracking — `/paid`, `/owe`, `/settle`, `/balances`, matched by first name. |
+| `52_habit_tracker_bot.dart` | Daily habit check-ins with current/longest streak tracking. |
+| `53_feedback_bot.dart` | Anonymous feedback inbox — relays messages to an admin via `copyMessage` (not `forwardMessage`, which would leak the sender's name) and routes replies back. |
+| `54_booking_bot.dart` | Appointment slot picker — an inline "calendar" that shrinks as slots are booked. |
+| `55_rss_notifier_bot.dart` | Watches an RSS feed on a `Timer.periodic` alongside `Bot.poll`'s update stream, posting new entries to subscribed chats. |
+| `56_flashcard_bot.dart` | Spaced-repetition flashcard study (SM-2-style interval scheduling) with Again/Good/Easy grading buttons. |
+| `57_welcome_captcha_bot.dart` | Mutes new group members until they tap a "prove you're human" button within 2 minutes, or removes them. |
+| `58_pastebin_bot.dart` | Save a ```` ``` ````-fenced code block, get a short code back, share the full snippet inline anywhere. |
+| `59_guessing_game_bot.dart` | Classic 1-100 number guessing game with higher/lower hints, shared per-chat so groups can compete. |
+| `60_broadcast_bot.dart` | Admin `/broadcast` to every user and chat `BotStorage` has ever seen, skipping anyone who's blocked the bot. |
+| `61_price_alert_bot.dart` | Crypto price alerts backed by CoinGecko's free, keyless API, checked every minute via `Timer.periodic`. |
 
 ## A note on error handling
 

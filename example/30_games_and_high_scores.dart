@@ -38,33 +38,27 @@ Future<void> main() async {
 
     if (text == '/play') {
       // Posts a card with a "Play" button that opens the registered game.
-      await bot.sendGame(chatId, gameShortName);
+      await bot.sendGame(chatId: chatId, gameShortName: gameShortName);
     } else if (text.startsWith('/score ')) {
       // In a real game, this would be called by your game's own server once
       // it detects the round ended — not directly from a chat command like
       // this. It's inlined here purely so the example is runnable end to end.
       final score = int.tryParse(text.substring('/score '.length)) ?? 0;
-      await bot.setGameScore(userId, score, chatId: chatId);
-      await bot.sendMessage(chatId, 'Recorded a score of $score.');
+      await bot.setGameScore(userId: userId, score: score, chatId: chatId);
+      await bot.sendMessage(chatId: chatId, text: 'Recorded a score of $score.');
     } else if (text == '/leaderboard') {
       // Returns scores for the players "closest" to this one on the
       // leaderboard, not a global top-N — pass the same chat/message
       // context the game card was posted in.
-      final scores = await bot.getGameHighScores(userId, chatId: chatId);
+      final scores = await bot.getGameHighScores(userId: userId, chatId: chatId);
       if (scores.isEmpty) {
-        await bot.sendMessage(
-          chatId,
-          'No scores recorded yet — try /score <number> first.',
-        );
+        await bot.sendMessage(chatId: chatId, text: 'No scores recorded yet — try /score <number> first.');
       } else {
         final lines = scores.map((s) => '${s.user.firstName}: ${s.score}');
-        await bot.sendMessage(chatId, 'Leaderboard:\n${lines.join('\n')}');
+        await bot.sendMessage(chatId: chatId, text: 'Leaderboard:\n${lines.join('\n')}');
       }
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /play, /score <number>, or /leaderboard.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /play, /score <number>, or /leaderboard.');
     }
   }
 }

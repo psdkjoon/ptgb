@@ -26,8 +26,8 @@ class InputTextMessageContent implements InputMessageContent {
   final LinkPreviewOptions? linkPreviewOptions;
 
   /// Creates text content from [messageText].
-  const InputTextMessageContent(
-    this.messageText, {
+  const InputTextMessageContent({
+    required this.messageText,
     this.parseMode,
     this.entities,
     this.linkPreviewOptions,
@@ -64,9 +64,9 @@ class InputLocationMessageContent implements InputMessageContent {
   final int? proximityAlertRadius;
 
   /// Creates location content from [latitude]/[longitude].
-  const InputLocationMessageContent(
-    this.latitude,
-    this.longitude, {
+  const InputLocationMessageContent({
+    required this.latitude,
+    required this.longitude,
     this.horizontalAccuracy,
     this.livePeriod,
     this.heading,
@@ -113,11 +113,11 @@ class InputVenueMessageContent implements InputMessageContent {
   final String? googlePlaceType;
 
   /// Creates venue content.
-  const InputVenueMessageContent(
-    this.latitude,
-    this.longitude,
-    this.title,
-    this.address, {
+  const InputVenueMessageContent({
+    required this.latitude,
+    required this.longitude,
+    required this.title,
+    required this.address,
     this.foursquareId,
     this.foursquareType,
     this.googlePlaceId,
@@ -152,9 +152,9 @@ class InputContactMessageContent implements InputMessageContent {
   final String? vcard;
 
   /// Creates contact content.
-  const InputContactMessageContent(
-    this.phoneNumber,
-    this.firstName, {
+  const InputContactMessageContent({
+    required this.phoneNumber,
+    required this.firstName,
     this.lastName,
     this.vcard,
   });
@@ -231,12 +231,12 @@ class InputInvoiceMessageContent implements InputMessageContent {
   final bool? isFlexible;
 
   /// Creates invoice content.
-  const InputInvoiceMessageContent(
-    this.title,
-    this.description,
-    this.payload,
-    this.currency,
-    this.prices, {
+  const InputInvoiceMessageContent({
+    required this.title,
+    required this.description,
+    required this.payload,
+    required this.currency,
+    required this.prices,
     this.providerToken,
     this.maxTipAmount,
     this.suggestedTipAmounts,

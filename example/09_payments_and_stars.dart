@@ -31,7 +31,7 @@ Future<void> main() async {
     final preCheckout = update.preCheckoutQuery;
     if (preCheckout != null) {
       // Here you'd check stock, validate the payload, etc. We always accept.
-      await bot.answerPreCheckoutQuery(preCheckout.id, true);
+      await bot.answerPreCheckoutQuery(preCheckoutQueryId: preCheckout.id, ok: true);
       continue;
     }
 
@@ -42,31 +42,19 @@ Future<void> main() async {
     // message that follows the invoice.
     final successfulPayment = update.message?.successfulPayment;
     if (successfulPayment != null && chatId != null) {
-      await bot.sendMessage(
-        chatId,
-        'Thank you for your purchase! 🎉 Here is your sticker pack.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Thank you for your purchase! 🎉 Here is your sticker pack.');
       continue;
     }
 
     if (text == '/buy' && chatId != null) {
       // Step 1: send the invoice. `currency: 'XTR'` and no `providerToken`
       // means "charge in Telegram Stars" — no external payment provider needed.
-      await bot.sendInvoice(
-        chatId,
-        'Digital Sticker Pack',
-        'A pack of 20 exclusive stickers, delivered instantly.',
-        'sticker_pack_v1', // your own internal order/payload identifier
-        'XTR',
-        [
+      await bot.sendInvoice(chatId: chatId, title: 'Digital Sticker Pack', description: 'A pack of 20 exclusive stickers, delivered instantly.', payload: 'sticker_pack_v1' /* your own internal order/payload identifier */, currency:
+        'XTR', prices: [
           {'label': 'Sticker Pack', 'amount': 50}, // 50 Telegram Stars
-        ],
-      );
+        ],);
     } else if (text != null && chatId != null) {
-      await bot.sendMessage(
-        chatId,
-        'Send /buy to purchase a digital sticker pack for 50 ⭐.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Send /buy to purchase a digital sticker pack for 50 ⭐.');
     }
   }
 }

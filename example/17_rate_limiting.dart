@@ -41,7 +41,7 @@ Future<void> main() async {
   // limit. With one, ptgb automatically spaces them out for you.
   final broadcastChatIds = <int>[/* ...your chat IDs... */];
   for (final chatId in broadcastChatIds) {
-    await bot.sendMessage(chatId, 'Scheduled announcement!');
+    await bot.sendMessage(chatId: chatId, text: 'Scheduled announcement!');
   }
 
   // Everyday polling works exactly the same as without a RateLimiter — the
@@ -49,10 +49,7 @@ Future<void> main() async {
   // allow, so normal traffic isn't slowed down.
   await for (final update in bot.poll()) {
     if (update.text == '/start') {
-      await bot.sendMessage(
-        update.chatId!,
-        'Hello! My sends are now automatically paced.',
-      );
+      await bot.sendMessage(chatId: update.chatId!, text: 'Hello! My sends are now automatically paced.');
     }
   }
 }

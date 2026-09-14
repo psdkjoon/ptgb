@@ -29,166 +29,56 @@ Future<void> main() async {
 
     final results = <InlineQueryResult>[
       // --- Fetched-by-URL results --------------------------------------
-      InlineQueryResultArticle(
-        'article',
-        'Article result',
-        InputTextMessageContent('Sent from an InlineQueryResultArticle.'),
-        description: 'A link-style result with a title and description',
-        url: 'https://core.telegram.org/bots/api#inlinequeryresultarticle',
-      ),
-      InlineQueryResultPhoto(
-        'photo',
-        'https://picsum.photos/seed/photo/600',
-        'https://picsum.photos/seed/photo/100',
-        title: 'Photo result',
-        caption: 'A photo fetched by URL',
-      ),
-      InlineQueryResultGif(
-        'gif',
-        'https://example.com/sample.gif',
-        'https://example.com/sample_thumb.jpg',
-        title: 'GIF result',
-      ),
-      InlineQueryResultMpeg4Gif(
-        'mpeg4_gif',
-        'https://example.com/sample.mp4',
-        'https://example.com/sample_thumb.jpg',
-        title: 'MPEG4 GIF result',
-      ),
+      InlineQueryResultArticle(id: 'article', title: 'Article result', inputMessageContent: InputTextMessageContent(messageText: 'Sent from an InlineQueryResultArticle.'), description: 'A link-style result with a title and description', url: 'https://core.telegram.org/bots/api#inlinequeryresultarticle'),
+      InlineQueryResultPhoto(id: 'photo', photoUrl: 'https://picsum.photos/seed/photo/600', thumbnailUrl: 'https://picsum.photos/seed/photo/100', title: 'Photo result', caption: 'A photo fetched by URL'),
+      InlineQueryResultGif(id: 'gif', gifUrl: 'https://example.com/sample.gif', thumbnailUrl: 'https://example.com/sample_thumb.jpg', title: 'GIF result'),
+      InlineQueryResultMpeg4Gif(id: 'mpeg4_gif', mpeg4Url: 'https://example.com/sample.mp4', thumbnailUrl: 'https://example.com/sample_thumb.jpg', title: 'MPEG4 GIF result'),
       InlineQueryResultVideo(
-        'video',
-        'https://example.com/sample.mp4',
-        'video/mp4',
-        'https://example.com/sample_thumb.jpg',
-        'Video result',
+        id: 'video',
+        videoUrl: 'https://example.com/sample.mp4',
+        mimeType: 'video/mp4',
+        thumbnailUrl: 'https://example.com/sample_thumb.jpg',
+        title: 'Video result',
         // Embedded (non-MP4) videos can't be sent directly, so a `video/mp4`
         // result like this one is sent as-is — inputMessageContent is only
         // required for `text/html` video results.
         description: 'An MP4 video fetched by URL',
       ),
-      InlineQueryResultAudio(
-        'audio',
-        'https://example.com/sample.mp3',
-        'Audio result',
-        performer: 'ptgb',
-      ),
-      InlineQueryResultVoice(
-        'voice',
-        'https://example.com/sample.ogg',
-        'Voice result',
-      ),
-      InlineQueryResultDocument(
-        'document',
-        'Document result',
-        'https://example.com/sample.pdf',
-        'application/pdf',
-        description: 'A PDF fetched by URL',
-      ),
-      InlineQueryResultLocation(
-        'location',
-        51.5074,
-        -0.1278,
-        'Location result',
-      ),
-      InlineQueryResultVenue(
-        'venue',
-        40.7484,
-        -73.9857,
-        'Venue result',
-        '350 5th Ave, New York, NY',
-      ),
-      InlineQueryResultContact(
-        'contact',
-        '+15551234567',
-        'Contact result',
-      ),
-      InlineQueryResultGame('game', 'your_game_short_name'),
-      InlineQueryResultSticker(
-        'sticker',
-        'https://example.com/sample_sticker.webp',
-      ),
+      InlineQueryResultAudio(id: 'audio', audioUrl: 'https://example.com/sample.mp3', title: 'Audio result', performer: 'ptgb'),
+      InlineQueryResultVoice(id: 'voice', voiceUrl: 'https://example.com/sample.ogg', title: 'Voice result'),
+      InlineQueryResultDocument(id: 'document', title: 'Document result', documentUrl: 'https://example.com/sample.pdf', mimeType: 'application/pdf', description: 'A PDF fetched by URL'),
+      InlineQueryResultLocation(id: 'location', latitude: 51.5074, longitude: -0.1278, title: 'Location result'),
+      InlineQueryResultVenue(id: 'venue', latitude: 40.7484, longitude: -73.9857, title: 'Venue result', address: '350 5th Ave, New York, NY'),
+      InlineQueryResultContact(id: 'contact', phoneNumber: '+15551234567', firstName: 'Contact result'),
+      InlineQueryResultGame(id: 'game', gameShortName: 'your_game_short_name'),
+      InlineQueryResultSticker(id: 'sticker', stickerUrl: 'https://example.com/sample_sticker.webp'),
 
       // --- Cached (`file_id`-based) results -----------------------------
       // These reuse a file already on Telegram's servers — swap in a real
       // `file_id` your bot has previously received or uploaded.
-      InlineQueryResultCachedPhoto('cached_photo', 'YOUR_PHOTO_FILE_ID'),
-      InlineQueryResultCachedGif('cached_gif', 'YOUR_GIF_FILE_ID'),
-      InlineQueryResultCachedMpeg4Gif(
-        'cached_mpeg4_gif',
-        'YOUR_MPEG4_FILE_ID',
-      ),
-      InlineQueryResultCachedSticker('cached_sticker', 'YOUR_STICKER_FILE_ID'),
-      InlineQueryResultCachedDocument(
-        'cached_document',
-        'Cached document result',
-        'YOUR_DOCUMENT_FILE_ID',
-      ),
-      InlineQueryResultCachedVideo(
-        'cached_video',
-        'YOUR_VIDEO_FILE_ID',
-        'Cached video result',
-      ),
-      InlineQueryResultCachedVoice(
-        'cached_voice',
-        'YOUR_VOICE_FILE_ID',
-        'Cached voice result',
-      ),
-      InlineQueryResultCachedAudio('cached_audio', 'YOUR_AUDIO_FILE_ID'),
+      InlineQueryResultCachedPhoto(id: 'cached_photo', photoFileId: 'YOUR_PHOTO_FILE_ID'),
+      InlineQueryResultCachedGif(id: 'cached_gif', gifFileId: 'YOUR_GIF_FILE_ID'),
+      InlineQueryResultCachedMpeg4Gif(id: 'cached_mpeg4_gif', mpeg4FileId: 'YOUR_MPEG4_FILE_ID'),
+      InlineQueryResultCachedSticker(id: 'cached_sticker', stickerFileId: 'YOUR_STICKER_FILE_ID'),
+      InlineQueryResultCachedDocument(id: 'cached_document', title: 'Cached document result', documentFileId: 'YOUR_DOCUMENT_FILE_ID'),
+      InlineQueryResultCachedVideo(id: 'cached_video', videoFileId: 'YOUR_VIDEO_FILE_ID', title: 'Cached video result'),
+      InlineQueryResultCachedVoice(id: 'cached_voice', voiceFileId: 'YOUR_VOICE_FILE_ID', title: 'Cached voice result'),
+      InlineQueryResultCachedAudio(id: 'cached_audio', audioFileId: 'YOUR_AUDIO_FILE_ID'),
 
       // --- Every InputMessageContent subtype, via plain articles --------
-      InlineQueryResultArticle(
-        'input_text',
-        'InputTextMessageContent',
-        InputTextMessageContent(
-          '*Bold* text via Markdown',
-          parseMode: ParseMode.markdownV2,
-        ),
-      ),
-      InlineQueryResultArticle(
-        'input_location',
-        'InputLocationMessageContent',
-        InputLocationMessageContent(48.8584, 2.2945),
-      ),
-      InlineQueryResultArticle(
-        'input_venue',
-        'InputVenueMessageContent',
-        InputVenueMessageContent(
-          48.8584,
-          2.2945,
-          'Eiffel Tower',
-          'Champ de Mars, 5 Av. Anatole France, Paris',
-        ),
-      ),
-      InlineQueryResultArticle(
-        'input_contact',
-        'InputContactMessageContent',
-        InputContactMessageContent('+15551234567', 'ptgb'),
-      ),
-      InlineQueryResultArticle(
-        'input_invoice',
-        'InputInvoiceMessageContent',
-        InputInvoiceMessageContent(
-          'Sample product',
-          'A product sent from an inline query result',
-          'sample-payload',
-          'XTR',
-          [
+      InlineQueryResultArticle(id: 'input_text', title: 'InputTextMessageContent', inputMessageContent: InputTextMessageContent(messageText: '*Bold* text via Markdown', parseMode: ParseMode.markdownV2)),
+      InlineQueryResultArticle(id: 'input_location', title: 'InputLocationMessageContent', inputMessageContent: InputLocationMessageContent(latitude: 48.8584, longitude: 2.2945)),
+      InlineQueryResultArticle(id: 'input_venue', title: 'InputVenueMessageContent', inputMessageContent: InputVenueMessageContent(latitude: 48.8584, longitude: 2.2945, title: 'Eiffel Tower', address: 'Champ de Mars, 5 Av. Anatole France, Paris')),
+      InlineQueryResultArticle(id: 'input_contact', title: 'InputContactMessageContent', inputMessageContent: InputContactMessageContent(phoneNumber: '+15551234567', firstName: 'ptgb')),
+      InlineQueryResultArticle(id: 'input_invoice', title: 'InputInvoiceMessageContent', inputMessageContent: InputInvoiceMessageContent(title: 'Sample product', description: 'A product sent from an inline query result', payload: 'sample-payload', currency: 'XTR', prices: [
             {'label': 'Sample product', 'amount': 100},
-          ],
-        ),
-      ),
+          ],),),
     ];
 
-    await bot.answerInlineQuery(
-      query.id,
-      results,
-      cacheTime: 0,
-      isPersonal: false,
-      nextOffset: '', // set to a real cursor if you paginate results
+    await bot.answerInlineQuery(inlineQueryId: query.id, results: results, cacheTime: 0, isPersonal: false, nextOffset: '' /* set to a real cursor if you paginate results */,
       button: {
         'text': 'About this gallery',
         'start_parameter': 'gallery_info',
-      },
-    );
+      },);
   }
 }

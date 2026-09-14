@@ -32,33 +32,18 @@ Future<void> main() async {
     if (text == '/no_preview') {
       // `LinkPreviewOptions.disabled()` is a shortcut for
       // `LinkPreviewOptions(isDisabled: true)`.
-      await bot.sendMessage(
-        chatId,
-        'Check the docs at https://core.telegram.org/bots/api — no preview card here.',
-        linkPreviewOptions: LinkPreviewOptions.disabled(),
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Check the docs at https://core.telegram.org/bots/api — no preview card here.', linkPreviewOptions: LinkPreviewOptions.disabled());
     } else if (text == '/pick_preview') {
       // The message mentions one URL in passing but we want the preview to
       // come from a different, more relevant one.
-      await bot.sendMessage(
-        chatId,
-        'See core.telegram.org for the full API — image below is unrelated:',
-        linkPreviewOptions: const LinkPreviewOptions(url: 'https://dart.dev'),
-      );
+      await bot.sendMessage(chatId: chatId, text: 'See core.telegram.org for the full API — image below is unrelated:', linkPreviewOptions: const LinkPreviewOptions(url: 'https://dart.dev'));
     } else if (text == '/big_preview_above') {
-      await bot.sendMessage(
-        chatId,
-        'Big preview, shown above the text — https://dart.dev',
-        linkPreviewOptions: const LinkPreviewOptions(
+      await bot.sendMessage(chatId: chatId, text: 'Big preview, shown above the text — https://dart.dev', linkPreviewOptions: const LinkPreviewOptions(
           preferLargeMedia: true,
           showAboveText: true,
-        ),
-      );
+        ),);
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /no_preview, /pick_preview, or /big_preview_above.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /no_preview, /pick_preview, or /big_preview_above.');
     }
   }
 }

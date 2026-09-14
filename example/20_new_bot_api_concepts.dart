@@ -39,26 +39,26 @@ Future<void> main() async {
     if (update.text == '/checklist-demo') {
       const businessConnectionId = 'REPLACE_WITH_A_REAL_BUSINESS_CONNECTION_ID';
       final checklist = InputChecklist(
-        'Trip packing list',
-        const [
-          InputChecklistTask(1, 'Passport'),
-          InputChecklistTask(2, 'Charger'),
-          InputChecklistTask(3, 'Sunscreen'),
+        title: 'Trip packing list',
+        tasks: const [
+          InputChecklistTask(id: 1, text: 'Passport'),
+          InputChecklistTask(id: 2, text: 'Charger'),
+          InputChecklistTask(id: 3, text: 'Sunscreen'),
         ],
         othersCanMarkTasksAsDone: true,
       );
-      log('Would call: bot.sendChecklist($businessConnectionId, chatId, '
+      log('Would call: bot.sendChecklist(businessConnectionId: $businessConnectionId, chatId: chatId, checklist: '
           'checklist "${checklist.title}")');
-      // await bot.sendChecklist(businessConnectionId, update.chatId!, checklist);
+      // await bot.sendChecklist(businessConnectionId: businessConnectionId, chatId: update.chatId!, checklist: checklist);
       //
       // To edit it afterwards (e.g. after the message_id comes back):
-      //   final updated = InputChecklist('Trip packing list', [
-      //     const InputChecklistTask(1, 'Passport'),
-      //     const InputChecklistTask(2, 'Charger'),
-      //     const InputChecklistTask(3, 'Sunscreen'),
-      //     const InputChecklistTask(4, 'Book'), // task added
+      //   final updated = InputChecklist(title: 'Trip packing list', tasks: [
+      //     const InputChecklistTask(id: 1, text: 'Passport'),
+      //     const InputChecklistTask(id: 2, text: 'Charger'),
+      //     const InputChecklistTask(id: 3, text: 'Sunscreen'),
+      //     const InputChecklistTask(id: 4, text: 'Book'), // task added
       //   ]);
-      //   await bot.editMessageChecklist(businessConnectionId, chatId, messageId, updated);
+      //   await bot.editMessageChecklist(businessConnectionId: businessConnectionId, chatId: chatId, messageId: messageId, checklist: updated);
       continue;
     }
 
@@ -90,7 +90,7 @@ Future<void> main() async {
           },
         ],
       };
-      await bot.sendRichMessage(chatId, richMessage);
+      await bot.sendRichMessage(chatId: chatId, richMessage: richMessage);
       // `sendRichMessageDraft` sends the same shape but marks it as a
       // still-being-generated preview — handy for streaming an AI
       // response block by block, the rich-content equivalent of
@@ -113,12 +113,12 @@ Future<void> main() async {
       final messageId = update.messageId!;
       log('Suggested post received: $suggestedPostInfo');
       // Approve immediately:
-      //   await bot.approveSuggestedPost(chatId, messageId);
+      //   await bot.approveSuggestedPost(chatId: chatId, messageId: messageId);
       // Approve for a specific future time instead:
-      //   await bot.approveSuggestedPost(chatId, messageId, sendDate: someUnixTime);
+      //   await bot.approveSuggestedPost(chatId: chatId, messageId: messageId, sendDate: someUnixTime);
       // Or decline with a reason shown to the poster:
-      //   await bot.declineSuggestedPost(chatId, messageId, comment: 'Not on-topic for this channel');
-      await bot.approveSuggestedPost(chatId, messageId);
+      //   await bot.declineSuggestedPost(chatId: chatId, messageId: messageId, comment: 'Not on-topic for this channel');
+      await bot.approveSuggestedPost(chatId: chatId, messageId: messageId);
       continue;
     }
 
@@ -148,13 +148,8 @@ Future<void> main() async {
       }) as Json;
       final ephemeralMessageId = sent['ephemeral_message_id'] as int;
       await Future<void>.delayed(const Duration(seconds: 3));
-      await bot.editEphemeralMessageText(
-        chatId,
-        userId,
-        ephemeralMessageId,
-        'Still only you — but edited 3 seconds later.',
-      );
-      // await bot.deleteEphemeralMessage(chatId, userId, ephemeralMessageId);
+      await bot.editEphemeralMessageText(chatId: chatId, receiverUserId: userId, ephemeralMessageId: ephemeralMessageId, text: 'Still only you — but edited 3 seconds later.');
+      // await bot.deleteEphemeralMessage(chatId: chatId, receiverUserId: userId, ephemeralMessageId: ephemeralMessageId);
       continue;
     }
 
@@ -170,14 +165,7 @@ Future<void> main() async {
     if (update.guestMessage != null) {
       final guestQueryId = update.guestQueryId!;
       log('Guest message: ${update.text}');
-      await bot.answerGuestQuery(
-        guestQueryId,
-        InlineQueryResultArticle(
-          '1',
-          'Hello from a guest bot',
-          InputTextMessageContent('Thanks for summoning me!'),
-        ),
-      );
+      await bot.answerGuestQuery(guestQueryId: guestQueryId, result: InlineQueryResultArticle(id: '1', title: 'Hello from a guest bot', inputMessageContent: InputTextMessageContent(messageText: 'Thanks for summoning me!')));
       continue;
     }
 
@@ -196,27 +184,24 @@ Future<void> main() async {
     final chatJoinRequestQueryId = update.chatJoinRequestQueryId;
     if (chatJoinRequestQueryId != null) {
       // Resolve directly:
-      //   await bot.answerChatJoinRequestQuery(chatJoinRequestQueryId, 'approve');
-      //   await bot.answerChatJoinRequestQuery(chatJoinRequestQueryId, 'decline');
-      //   await bot.answerChatJoinRequestQuery(chatJoinRequestQueryId, 'queue'); // let a human decide
+      //   await bot.answerChatJoinRequestQuery(chatJoinRequestQueryId: chatJoinRequestQueryId, result: 'approve');
+      //   await bot.answerChatJoinRequestQuery(chatJoinRequestQueryId: chatJoinRequestQueryId, result: 'decline');
+      //   await bot.answerChatJoinRequestQuery(chatJoinRequestQueryId: chatJoinRequestQueryId, result: 'queue'); // let a human decide
       //
       // ...or show a Mini App first and decide based on what it reports back:
-      //   await bot.sendChatJoinRequestWebApp(chatJoinRequestQueryId, {
+      //   await bot.sendChatJoinRequestWebApp(chatJoinRequestQueryId: chatJoinRequestQueryId, webApp: {
       //     'url': 'https://example.com/verify',
       //   });
       log('Guard-bot join request query: $chatJoinRequestQueryId');
-      await bot.answerChatJoinRequestQuery(chatJoinRequestQueryId, 'queue');
+      await bot.answerChatJoinRequestQuery(chatJoinRequestQueryId: chatJoinRequestQueryId, result: 'queue');
       continue;
     }
 
     if (update.text == '/start') {
       final chatId = update.chatId;
       if (chatId != null) {
-        await bot.sendMessage(
-          chatId,
-          'Try /checklist-demo, /rich-demo, or /ephemeral-demo to see the '
-          'newer Bot API concepts covered in this example.',
-        );
+        await bot.sendMessage(chatId: chatId, text: 'Try /checklist-demo, /rich-demo, or /ephemeral-demo to see the '
+          'newer Bot API concepts covered in this example.',);
       }
     }
   }

@@ -70,7 +70,7 @@ Object _msgOrBool(dynamic r) => r is Map ? Message(_o(r)) : _b(r);
 ///
 ///   await for (final update in bot.poll()) {
 ///     if (update.text == '/start') {
-///       await bot.sendMessage(update.chatId!, 'Hello!');
+///       await bot.sendMessage(chatId: update.chatId!, text: 'Hello!');
 ///     }
 ///   }
 /// }
@@ -88,11 +88,54 @@ class Bot {
 
   Bot._(this.token, this._client, this._rateLimiter);
 
+  /// The `.env` template `ptgb` writes for you the very first time it can't
+  /// find a `.env` file — see [Bot.new]'s `dotEnvTemplate` parameter.
+  ///
+  /// It's written out exactly like this, with real explanations instead of
+  /// bare placeholders, so a complete beginner knows exactly what to paste
+  /// in and where to get it:
+  ///
+  /// ```env
+  /// # This file holds your bot's secret token. Never share it or commit
+  /// # this file to git (add ".env" to your .gitignore).
+  /// #
+  /// # How to get a token:
+  /// #   1. Open Telegram and start a chat with @BotFather.
+  /// #   2. Send /newbot and follow the prompts (or /token to reuse an
+  /// #      existing bot).
+  /// #   3. Copy the token BotFather gives you and paste it below, after
+  /// #      the "=" sign, with no spaces and no quotes.
+  /// #
+  /// # TOKEN=123456789:AAExampleTokenTextGoesRightHere
+  /// TOKEN=
+  /// ```
+  static const String defaultDotEnvTemplate = '''
+# This file holds your bot's secret token. Never share it or commit this
+# file to git (add ".env" to your .gitignore).
+#
+# How to get a token:
+#   1. Open Telegram and start a chat with @BotFather.
+#   2. Send /newbot and follow the prompts (or /token to reuse an
+#      existing bot).
+#   3. Copy the token BotFather gives you and paste it below, after the
+#      "=" sign, with no spaces and no quotes.
+#
+# TOKEN=123456789:AAExampleTokenTextGoesRightHere
+TOKEN=
+''';
+
   /// Creates a [Bot].
   ///
   /// Pass [token] directly, or omit it to load it automatically from a
   /// `.env`-style file (see the `penv` package) using [dotFileName] and
-  /// [envKey] — handy for keeping secrets out of source control.
+  /// [envKey] — handy for keeping secrets out of source control. The very
+  /// first time no such file exists, one is created for you at
+  /// [dotFileName] containing [dotEnvTemplate] (a beginner-friendly
+  /// explanation of what to paste in and where to get it from — see
+  /// [defaultDotEnvTemplate]), and a [EnvFileNotFoundException] is thrown
+  /// so you know to fill it in and run your program again. Pass your own
+  /// [dotEnvTemplate] to customize that starter content, e.g. to add more
+  /// keys your bot needs alongside `TOKEN`.
   ///
   /// [apiBaseUrl] and [fileBaseUrl] let you point at a self-hosted Bot API
   /// server instead of `api.telegram.org`.
@@ -108,16 +151,27 @@ class Bot {
   /// If you pass a longer `timeout` to [poll] or [getUpdates], raise this
   /// to match (it must exceed the long-poll `timeout` or every poll will
   /// spuriously time out).
+  ///
+  /// ```dart
+  /// // Simplest form: reads TOKEN from a .env file next to your script,
+  /// // creating a beginner-friendly template for you if it doesn't exist yet.
+  /// final bot = Bot();
+  ///
+  /// // Or supply the token directly, e.g. from your own config system.
+  /// final bot = Bot(token: '123456789:AAExampleTokenTextGoesRightHere');
+  /// ```
   factory Bot({
     String? token,
     String dotFileName = '.env',
     String envKey = 'TOKEN',
+    String dotEnvTemplate = defaultDotEnvTemplate,
     String? apiBaseUrl,
     String? fileBaseUrl,
     RateLimiter? rateLimiter,
     Duration requestTimeout = const Duration(seconds: 35),
   }) {
-    final resolvedToken = token ?? penvload(dotFileName)[envKey] as String;
+    final resolvedToken = token ??
+        penvload(dotFileName, template: dotEnvTemplate)[envKey] as String;
     final api = apiBaseUrl ?? 'https://api.telegram.org/bot$resolvedToken';
     final files =
         fileBaseUrl ?? 'https://api.telegram.org/file/bot$resolvedToken';
@@ -185,8 +239,8 @@ class Bot {
 
   /// Registers [url] as the webhook endpoint Telegram will POST updates to.
   /// Use [serveWebhook] on your side to actually receive them.
-  Future<bool> setWebhook(
-    String url, {
+  Future<bool> setWebhook({
+    required String url,
     InputFile? certificate,
     String? ipAddress,
     int? maxConnections,
@@ -234,7 +288,7 @@ class Bot {
   /// ```dart
   /// await for (final update in bot.poll()) {
   ///   if (update.text != null) {
-  ///     await bot.sendMessage(update.chatId!, 'You said: \${update.text}');
+  ///     await bot.sendMessage(chatId: update.chatId!, text: 'You said: \${update.text}');
   ///   }
   /// }
   /// ```
@@ -296,8 +350,8 @@ class Bot {
   /// `null` (the default), such errors are swallowed silently, same as
   /// before. Either way, the request still gets an HTTP 200 response, since
   /// Telegram doesn't inspect it.
-  Future<HttpServer> serveWebhook(
-    void Function(Update update) onUpdate, {
+  Future<HttpServer> serveWebhook({
+    required void Function(Update update) onUpdate,
     String path = '/',
     Object address = '0.0.0.0',
     int port = 8443,
@@ -336,14 +390,18 @@ class Bot {
   }
 
   /// Downloads the raw bytes of a file already located via [getFile], given its `file_path`.
-  Future<Uint8List> downloadFile(String filePath) =>
+  Future<Uint8List> downloadFile({
+    required String filePath,
+  }) =>
       _client.downloadFile(filePath);
 
   /// Convenience helper that resolves a Telegram `file_id` via [getFile] and
   /// immediately downloads its bytes in one call.
-  Future<Uint8List> downloadFileById(String fileId) async {
-    final file = await getFile(fileId);
-    return downloadFile(file.filePath!);
+  Future<Uint8List> downloadFileById({
+    required String fileId,
+  }) async {
+    final file = await getFile(fileId: fileId);
+    return downloadFile(filePath: file.filePath!);
   }
 
   /// Sends a text message to [chatId].
@@ -351,9 +409,9 @@ class Bot {
   /// This is the most common method in the whole API. Use [parseMode] to enable
   /// Markdown/HTML formatting, [replyMarkup] to attach an inline/reply keyboard,
   /// and [replyParameters] to reply to an existing message.
-  Future<Message> sendMessage(
-    Object chatId,
-    String text, {
+  Future<Message> sendMessage({
+    required Object chatId,
+    required String text,
     String? businessConnectionId,
     int? messageThreadId,
     ParseMode? parseMode,
@@ -400,9 +458,9 @@ class Bot {
   /// ephemeral (a ~30-second preview); once the content is final, call
   /// [sendMessage] with the complete text to actually persist it. Re-using
   /// the same [draftId] animates the transition from the previous text.
-  Future<bool> sendMessageDraft(
-    Object chatId,
-    int draftId, {
+  Future<bool> sendMessageDraft({
+    required Object chatId,
+    required int draftId,
     int? messageThreadId,
     String? text,
     ParseMode? parseMode,
@@ -421,10 +479,10 @@ class Bot {
 
   /// Forwards a single existing message from [fromChatId] to [chatId], keeping
   /// the "Forwarded from" attribution.
-  Future<Message> forwardMessage(
-    Object chatId,
-    Object fromChatId,
-    int messageId, {
+  Future<Message> forwardMessage({
+    required Object chatId,
+    required Object fromChatId,
+    required int messageId,
     int? messageThreadId,
     bool? disableNotification,
     bool? protectContent,
@@ -444,10 +502,10 @@ class Bot {
       );
 
   /// Forwards a batch of messages ([messageIds]) from [fromChatId] to [chatId] in one call.
-  Future<List<Message>> forwardMessages(
-    Object chatId,
-    Object fromChatId,
-    List<int> messageIds, {
+  Future<List<Message>> forwardMessages({
+    required Object chatId,
+    required Object fromChatId,
+    required List<int> messageIds,
     int? messageThreadId,
     bool? disableNotification,
     bool? protectContent,
@@ -467,10 +525,10 @@ class Bot {
   /// Copies a message from [fromChatId] to [chatId] *without* the "Forwarded
   /// from" header, as if you wrote it yourself. Media, captions, and reply
   /// markup are preserved.
-  Future<MessageId> copyMessage(
-    Object chatId,
-    Object fromChatId,
-    int messageId, {
+  Future<MessageId> copyMessage({
+    required Object chatId,
+    required Object fromChatId,
+    required int messageId,
     int? messageThreadId,
     String? caption,
     ParseMode? parseMode,
@@ -507,10 +565,10 @@ class Bot {
       );
 
   /// Copies a batch of messages ([messageIds]) from [fromChatId] to [chatId] in one call.
-  Future<List<MessageId>> copyMessages(
-    Object chatId,
-    Object fromChatId,
-    List<int> messageIds, {
+  Future<List<MessageId>> copyMessages({
+    required Object chatId,
+    required Object fromChatId,
+    required List<int> messageIds,
     int? messageThreadId,
     bool? disableNotification,
     bool? protectContent,
@@ -531,9 +589,9 @@ class Bot {
 
   /// Sends a photo. [photo] accepts a `file_id`, a URL, or a local upload via
   /// [InputFile.path]/[InputFile.bytes].
-  Future<Message> sendPhoto(
-    Object chatId,
-    InputFile photo, {
+  Future<Message> sendPhoto({
+    required Object chatId,
+    required InputFile photo,
     String? businessConnectionId,
     int? messageThreadId,
     String? caption,
@@ -581,9 +639,9 @@ class Bot {
   /// Sends an audio file that Telegram will display with a music player UI.
   /// Use [sendVoice] instead for voice-message-style recordings, or
   /// [sendDocument] for arbitrary audio files you don't want played inline.
-  Future<Message> sendAudio(
-    Object chatId,
-    InputFile audio, {
+  Future<Message> sendAudio({
+    required Object chatId,
+    required InputFile audio,
     String? businessConnectionId,
     int? messageThreadId,
     String? caption,
@@ -631,9 +689,9 @@ class Bot {
       );
 
   /// Sends a general file/document of any type.
-  Future<Message> sendDocument(
-    Object chatId,
-    InputFile document, {
+  Future<Message> sendDocument({
+    required Object chatId,
+    required InputFile document,
     String? businessConnectionId,
     int? messageThreadId,
     InputFile? thumbnail,
@@ -681,9 +739,9 @@ class Bot {
       );
 
   /// Sends a video that Telegram can play inline in the chat.
-  Future<Message> sendVideo(
-    Object chatId,
-    InputFile video, {
+  Future<Message> sendVideo({
+    required Object chatId,
+    required InputFile video,
     String? businessConnectionId,
     int? messageThreadId,
     int? duration,
@@ -739,9 +797,9 @@ class Bot {
       );
 
   /// Sends an animation (GIF or silent, looping MP4).
-  Future<Message> sendAnimation(
-    Object chatId,
-    InputFile animation, {
+  Future<Message> sendAnimation({
+    required Object chatId,
+    required InputFile animation,
     String? businessConnectionId,
     int? messageThreadId,
     int? duration,
@@ -799,9 +857,9 @@ class Bot {
   /// Sends a voice-message-style audio clip (displayed with a waveform in the
   /// Telegram UI). The file must be an .ogg encoded with the OPUS codec, or
   /// another format Telegram can automatically convert.
-  Future<Message> sendVoice(
-    Object chatId,
-    InputFile voice, {
+  Future<Message> sendVoice({
+    required Object chatId,
+    required InputFile voice,
     String? businessConnectionId,
     int? messageThreadId,
     String? caption,
@@ -845,9 +903,9 @@ class Bot {
 
   /// Sends a round "video note" message (the circular video bubbles seen in
   /// Telegram chats). Telegram only supports square, i.e. `width == height`, video notes.
-  Future<Message> sendVideoNote(
-    Object chatId,
-    InputFile videoNote, {
+  Future<Message> sendVideoNote({
+    required Object chatId,
+    required InputFile videoNote,
     String? businessConnectionId,
     int? messageThreadId,
     int? duration,
@@ -891,9 +949,9 @@ class Bot {
 
   /// Sends an album of 2-10 photos/videos/documents/audio files grouped
   /// together as a single message using a list of [InputMedia] items.
-  Future<List<Message>> sendMediaGroup(
-    Object chatId,
-    List<InputMedia> media, {
+  Future<List<Message>> sendMediaGroup({
+    required Object chatId,
+    required List<InputMedia> media,
     String? businessConnectionId,
     int? messageThreadId,
     bool? disableNotification,
@@ -953,10 +1011,10 @@ class Bot {
   /// Sends paid media (photos/videos) that chat members must pay [starCount]
   /// Telegram Stars to unlock. Star proceeds are credited to the channel's
   /// balance if [chatId] is a channel, or to the bot's balance otherwise.
-  Future<Message> sendPaidMedia(
-    Object chatId,
-    int starCount,
-    List<InputPaidMedia> media, {
+  Future<Message> sendPaidMedia({
+    required Object chatId,
+    required int starCount,
+    required List<InputPaidMedia> media,
     String? businessConnectionId,
     String? payload,
     String? caption,
@@ -1027,10 +1085,10 @@ class Bot {
 
   /// Sends a point on the map. Set [livePeriod] to share a live, periodically
   /// updating location instead of a static point.
-  Future<Message> sendLocation(
-    Object chatId,
-    double latitude,
-    double longitude, {
+  Future<Message> sendLocation({
+    required Object chatId,
+    required double latitude,
+    required double longitude,
     String? businessConnectionId,
     int? messageThreadId,
     double? horizontalAccuracy,
@@ -1073,12 +1131,12 @@ class Bot {
       );
 
   /// Sends information about a venue (a location plus a name and address).
-  Future<Message> sendVenue(
-    Object chatId,
-    double latitude,
-    double longitude,
-    String title,
-    String address, {
+  Future<Message> sendVenue({
+    required Object chatId,
+    required double latitude,
+    required double longitude,
+    required String title,
+    required String address,
     String? businessConnectionId,
     int? messageThreadId,
     String? foursquareId,
@@ -1121,10 +1179,10 @@ class Bot {
       );
 
   /// Sends a phone contact card.
-  Future<Message> sendContact(
-    Object chatId,
-    String phoneNumber,
-    String firstName, {
+  Future<Message> sendContact({
+    required Object chatId,
+    required String phoneNumber,
+    required String firstName,
     String? businessConnectionId,
     int? messageThreadId,
     String? lastName,
@@ -1162,10 +1220,10 @@ class Bot {
 
   /// Sends a native Telegram poll or quiz. Use [type] set to `PollType.quiz` for
   /// a quiz poll and provide [correctOptionId].
-  Future<Message> sendPoll(
-    Object chatId,
-    String question,
-    List<String> options, {
+  Future<Message> sendPoll({
+    required Object chatId,
+    required String question,
+    required List<String> options,
     String? businessConnectionId,
     int? messageThreadId,
     List<Json>? questionEntities,
@@ -1224,8 +1282,8 @@ class Bot {
 
   /// Sends an animated dice-style emoji (dice, dart, basketball, etc). Telegram
   /// computes the result server-side, unlike a plain emoji message.
-  Future<Message> sendDice(
-    Object chatId, {
+  Future<Message> sendDice({
+    required Object chatId,
     String? businessConnectionId,
     int? messageThreadId,
     DiceEmoji? emoji,
@@ -1260,9 +1318,9 @@ class Bot {
   /// Shows a transient status indicator such as "Bot is typing..." in the chat.
   /// The indicator is automatically cleared after ~5 seconds or the next sent
   /// message, whichever is sooner.
-  Future<bool> sendChatAction(
-    Object chatId,
-    ChatAction action, {
+  Future<bool> sendChatAction({
+    required Object chatId,
+    required ChatAction action,
     String? businessConnectionId,
     int? messageThreadId,
   }) async =>
@@ -1277,9 +1335,9 @@ class Bot {
       );
 
   /// Sets (or clears) the bot's emoji reaction(s) on a message.
-  Future<bool> setMessageReaction(
-    Object chatId,
-    int messageId, {
+  Future<bool> setMessageReaction({
+    required Object chatId,
+    required int messageId,
     List<ReactionType>? reaction,
     bool? isBig,
   }) async =>
@@ -1300,8 +1358,8 @@ class Bot {
   /// Returns the edited [Message], or `true` when editing an inline
   /// message identified only by [inlineMessageId] (Telegram doesn't send a
   /// full message object back in that case).
-  Future<Object> editMessageText(
-    String text, {
+  Future<Object> editMessageText({
+    required String text,
     String? businessConnectionId,
     Object? chatId,
     int? messageId,
@@ -1362,8 +1420,8 @@ class Bot {
   ///
   /// Returns the edited [Message], or `true` when editing an inline
   /// message identified only by [inlineMessageId].
-  Future<Object> editMessageMedia(
-    InputMedia media, {
+  Future<Object> editMessageMedia({
+    required InputMedia media,
     String? businessConnectionId,
     Object? chatId,
     int? messageId,
@@ -1410,9 +1468,9 @@ class Bot {
   ///
   /// Returns the edited [Message], or `true` when editing an inline
   /// message identified only by [inlineMessageId].
-  Future<Object> editMessageLiveLocation(
-    double latitude,
-    double longitude, {
+  Future<Object> editMessageLiveLocation({
+    required double latitude,
+    required double longitude,
     String? businessConnectionId,
     Object? chatId,
     int? messageId,
@@ -1489,9 +1547,9 @@ class Bot {
 
   /// Immediately closes a poll so it no longer accepts new answers, and
   /// returns the final results.
-  Future<Poll> stopPoll(
-    Object chatId,
-    int messageId, {
+  Future<Poll> stopPoll({
+    required Object chatId,
+    required int messageId,
     String? businessConnectionId,
     InlineKeyboardMarkup? replyMarkup,
   }) async =>
@@ -1509,7 +1567,10 @@ class Bot {
 
   /// Deletes a single message. Bots can only delete their own messages in
   /// private chats, but have wider delete permissions in groups/channels they admin.
-  Future<bool> deleteMessage(Object chatId, int messageId) async => _b(
+  Future<bool> deleteMessage({
+    required Object chatId,
+    required int messageId,
+  }) async => _b(
         await call(
           'deleteMessage',
           {'chat_id': chatId, 'message_id': messageId},
@@ -1517,7 +1578,10 @@ class Bot {
       );
 
   /// Deletes a batch of messages ([messageIds]) in one call.
-  Future<bool> deleteMessages(Object chatId, List<int> messageIds) async => _b(
+  Future<bool> deleteMessages({
+    required Object chatId,
+    required List<int> messageIds,
+  }) async => _b(
         await call(
           'deleteMessages',
           {'chat_id': chatId, 'message_ids': messageIds},
@@ -1525,8 +1589,8 @@ class Bot {
       );
 
   /// Returns a user's profile photos, paginated via [offset]/[limit].
-  Future<UserProfilePhotos> getUserProfilePhotos(
-    int userId, {
+  Future<UserProfilePhotos> getUserProfilePhotos({
+    required int userId,
     int? offset,
     int? limit,
   }) async =>
@@ -1543,14 +1607,16 @@ class Bot {
   /// Resolves a Telegram `file_id` into a [Json] containing `file_path`, which
   /// can then be downloaded with [downloadFile] or streamed directly from
   /// `https://api.telegram.org/file/bot<token>/<file_path>`.
-  Future<TelegramFile> getFile(String fileId) async =>
+  Future<TelegramFile> getFile({
+    required String fileId,
+  }) async =>
       TelegramFile(_o(await call('getFile', {'file_id': fileId})));
 
   /// Bans a user from the chat. In supergroups/channels they won't be able to
   /// return until unbanned; set [untilDate] for a temporary ban.
-  Future<bool> banChatMember(
-    Object chatId,
-    int userId, {
+  Future<bool> banChatMember({
+    required Object chatId,
+    required int userId,
     int? untilDate,
     bool? revokeMessages,
   }) async =>
@@ -1565,9 +1631,9 @@ class Bot {
 
   /// Lifts a ban, allowing the user to rejoin. Set [onlyIfBanned] to avoid
   /// accidentally removing a user who is currently a member.
-  Future<bool> unbanChatMember(
-    Object chatId,
-    int userId, {
+  Future<bool> unbanChatMember({
+    required Object chatId,
+    required int userId,
     bool? onlyIfBanned,
   }) async =>
       _b(
@@ -1580,10 +1646,10 @@ class Bot {
 
   /// Restricts what a member can do in a supergroup via [permissions]
   /// (e.g. mute them by disabling `canSendMessages`), optionally until [untilDate].
-  Future<bool> restrictChatMember(
-    Object chatId,
-    int userId,
-    ChatPermissions permissions, {
+  Future<bool> restrictChatMember({
+    required Object chatId,
+    required int userId,
+    required ChatPermissions permissions,
     bool? useIndependentChatPermissions,
     int? untilDate,
   }) async =>
@@ -1600,9 +1666,9 @@ class Bot {
 
   /// Promotes or demotes a user to/from chat administrator, granting the
   /// specific admin privileges passed as named booleans.
-  Future<bool> promoteChatMember(
-    Object chatId,
-    int userId, {
+  Future<bool> promoteChatMember({
+    required Object chatId,
+    required int userId,
     bool? isAnonymous,
     bool? canManageChat,
     bool? canDeleteMessages,
@@ -1646,11 +1712,11 @@ class Bot {
       );
 
   /// Sets a custom title (shown instead of "Admin") for an admin in a supergroup.
-  Future<bool> setChatAdministratorCustomTitle(
-    Object chatId,
-    int userId,
-    String customTitle,
-  ) async =>
+  Future<bool> setChatAdministratorCustomTitle({
+    required Object chatId,
+    required int userId,
+    required String customTitle,
+  }) async =>
       _b(
         await call('setChatAdministratorCustomTitle', {
           'chat_id': chatId,
@@ -1660,7 +1726,10 @@ class Bot {
       );
 
   /// Bans an anonymous channel (acting as a sender chat) from a group/channel.
-  Future<bool> banChatSenderChat(Object chatId, int senderChatId) async => _b(
+  Future<bool> banChatSenderChat({
+    required Object chatId,
+    required int senderChatId,
+  }) async => _b(
         await call(
           'banChatSenderChat',
           {'chat_id': chatId, 'sender_chat_id': senderChatId},
@@ -1668,7 +1737,10 @@ class Bot {
       );
 
   /// Unbans a previously banned sender chat.
-  Future<bool> unbanChatSenderChat(Object chatId, int senderChatId) async => _b(
+  Future<bool> unbanChatSenderChat({
+    required Object chatId,
+    required int senderChatId,
+  }) async => _b(
         await call(
           'unbanChatSenderChat',
           {'chat_id': chatId, 'sender_chat_id': senderChatId},
@@ -1676,9 +1748,9 @@ class Bot {
       );
 
   /// Sets the default [ChatPermissions] that apply to all non-admin members of a chat.
-  Future<bool> setChatPermissions(
-    Object chatId,
-    ChatPermissions permissions, {
+  Future<bool> setChatPermissions({
+    required Object chatId,
+    required ChatPermissions permissions,
     bool? useIndependentChatPermissions,
   }) async =>
       _b(
@@ -1691,13 +1763,15 @@ class Bot {
       );
 
   /// Generates a new primary invite link for the chat, invalidating the previous one.
-  Future<String> exportChatInviteLink(Object chatId) async =>
+  Future<String> exportChatInviteLink({
+    required Object chatId,
+  }) async =>
       _s(await call('exportChatInviteLink', {'chat_id': chatId}));
 
   /// Creates an additional (non-primary) invite link, optionally limited by
   /// [expireDate], [memberLimit], or requiring admin approval via [createsJoinRequest].
-  Future<ChatInviteLink> createChatInviteLink(
-    Object chatId, {
+  Future<ChatInviteLink> createChatInviteLink({
+    required Object chatId,
     String? name,
     int? expireDate,
     int? memberLimit,
@@ -1717,9 +1791,9 @@ class Bot {
       );
 
   /// Edits a previously created non-primary invite link.
-  Future<ChatInviteLink> editChatInviteLink(
-    Object chatId,
-    String inviteLink, {
+  Future<ChatInviteLink> editChatInviteLink({
+    required Object chatId,
+    required String inviteLink,
     String? name,
     int? expireDate,
     int? memberLimit,
@@ -1740,10 +1814,10 @@ class Bot {
       );
 
   /// Revokes an invite link so it can no longer be used to join.
-  Future<ChatInviteLink> revokeChatInviteLink(
-    Object chatId,
-    String inviteLink,
-  ) async =>
+  Future<ChatInviteLink> revokeChatInviteLink({
+    required Object chatId,
+    required String inviteLink,
+  }) async =>
       ChatInviteLink(
         _o(
           await call(
@@ -1755,10 +1829,10 @@ class Bot {
 
   /// Creates a subscription invite link that charges [subscriptionPeriod] /
   /// [subscriptionPrice] in Telegram Stars for access to the channel.
-  Future<ChatInviteLink> createChatSubscriptionInviteLink(
-    Object chatId,
-    int subscriptionPeriod,
-    int subscriptionPrice, {
+  Future<ChatInviteLink> createChatSubscriptionInviteLink({
+    required Object chatId,
+    required int subscriptionPeriod,
+    required int subscriptionPrice,
     String? name,
   }) async =>
       ChatInviteLink(
@@ -1773,9 +1847,9 @@ class Bot {
       );
 
   /// Edits the name of an existing subscription invite link.
-  Future<ChatInviteLink> editChatSubscriptionInviteLink(
-    Object chatId,
-    String inviteLink, {
+  Future<ChatInviteLink> editChatSubscriptionInviteLink({
+    required Object chatId,
+    required String inviteLink,
     String? name,
   }) async =>
       ChatInviteLink(
@@ -1789,7 +1863,10 @@ class Bot {
       );
 
   /// Approves a pending join request for a chat that requires admin approval.
-  Future<bool> approveChatJoinRequest(Object chatId, int userId) async => _b(
+  Future<bool> approveChatJoinRequest({
+    required Object chatId,
+    required int userId,
+  }) async => _b(
         await call(
           'approveChatJoinRequest',
           {'chat_id': chatId, 'user_id': userId},
@@ -1797,7 +1874,10 @@ class Bot {
       );
 
   /// Declines a pending join request.
-  Future<bool> declineChatJoinRequest(Object chatId, int userId) async => _b(
+  Future<bool> declineChatJoinRequest({
+    required Object chatId,
+    required int userId,
+  }) async => _b(
         await call(
           'declineChatJoinRequest',
           {'chat_id': chatId, 'user_id': userId},
@@ -1805,19 +1885,30 @@ class Bot {
       );
 
   /// Sets a new chat photo, uploaded fresh (not reused via `file_id`).
-  Future<bool> setChatPhoto(Object chatId, InputFile photo) async =>
+  Future<bool> setChatPhoto({
+    required Object chatId,
+    required InputFile photo,
+  }) async =>
       _b(await call('setChatPhoto', {'chat_id': chatId}, {'photo': photo}));
 
   /// Deletes the chat's current photo.
-  Future<bool> deleteChatPhoto(Object chatId) async =>
+  Future<bool> deleteChatPhoto({
+    required Object chatId,
+  }) async =>
       _b(await call('deleteChatPhoto', {'chat_id': chatId}));
 
   /// Renames the chat.
-  Future<bool> setChatTitle(Object chatId, String title) async =>
+  Future<bool> setChatTitle({
+    required Object chatId,
+    required String title,
+  }) async =>
       _b(await call('setChatTitle', {'chat_id': chatId, 'title': title}));
 
   /// Sets or clears the chat's description.
-  Future<bool> setChatDescription(Object chatId, {String? description}) async =>
+  Future<bool> setChatDescription({
+    required Object chatId,
+    String? description,
+  }) async =>
       _b(
         await call('setChatDescription', {
           'chat_id': chatId,
@@ -1826,9 +1917,9 @@ class Bot {
       );
 
   /// Pins a message at the top of the chat.
-  Future<bool> pinChatMessage(
-    Object chatId,
-    int messageId, {
+  Future<bool> pinChatMessage({
+    required Object chatId,
+    required int messageId,
     String? businessConnectionId,
     bool? disableNotification,
   }) async =>
@@ -1844,8 +1935,8 @@ class Bot {
       );
 
   /// Unpins a message. If [messageId] is omitted, unpins the most recently pinned message.
-  Future<bool> unpinChatMessage(
-    Object chatId, {
+  Future<bool> unpinChatMessage({
+    required Object chatId,
     String? businessConnectionId,
     int? messageId,
   }) async =>
@@ -1859,29 +1950,42 @@ class Bot {
       );
 
   /// Unpins every currently pinned message in the chat.
-  Future<bool> unpinAllChatMessages(Object chatId) async =>
+  Future<bool> unpinAllChatMessages({
+    required Object chatId,
+  }) async =>
       _b(await call('unpinAllChatMessages', {'chat_id': chatId}));
 
   /// Makes the bot leave the given group, supergroup, or channel.
-  Future<bool> leaveChat(Object chatId) async =>
+  Future<bool> leaveChat({
+    required Object chatId,
+  }) async =>
       _b(await call('leaveChat', {'chat_id': chatId}));
 
   /// Fetches up-to-date information about a chat (title, description, permissions, etc).
-  Future<ChatFullInfo> getChat(Object chatId) async =>
+  Future<ChatFullInfo> getChat({
+    required Object chatId,
+  }) async =>
       ChatFullInfo(_o(await call('getChat', {'chat_id': chatId})));
 
   /// Lists every administrator (and the owner) of the chat.
-  Future<List<ChatMember>> getChatAdministrators(Object chatId) async =>
+  Future<List<ChatMember>> getChatAdministrators({
+    required Object chatId,
+  }) async =>
       _l(await call('getChatAdministrators', {'chat_id': chatId}))
           .map(ChatMember.new)
           .toList();
 
   /// Returns the number of members in the chat.
-  Future<int> getChatMemberCount(Object chatId) async =>
+  Future<int> getChatMemberCount({
+    required Object chatId,
+  }) async =>
       _i(await call('getChatMemberCount', {'chat_id': chatId}));
 
   /// Fetches a specific member's status and permissions within the chat.
-  Future<ChatMember> getChatMember(Object chatId, int userId) async =>
+  Future<ChatMember> getChatMember({
+    required Object chatId,
+    required int userId,
+  }) async =>
       ChatMember(
         _o(
           await call('getChatMember', {'chat_id': chatId, 'user_id': userId}),
@@ -1889,7 +1993,10 @@ class Bot {
       );
 
   /// Sets the group's custom sticker set (supergroups only).
-  Future<bool> setChatStickerSet(Object chatId, String stickerSetName) async =>
+  Future<bool> setChatStickerSet({
+    required Object chatId,
+    required String stickerSetName,
+  }) async =>
       _b(
         await call(
           'setChatStickerSet',
@@ -1898,7 +2005,9 @@ class Bot {
       );
 
   /// Removes the group's custom sticker set.
-  Future<bool> deleteChatStickerSet(Object chatId) async =>
+  Future<bool> deleteChatStickerSet({
+    required Object chatId,
+  }) async =>
       _b(await call('deleteChatStickerSet', {'chat_id': chatId}));
 
   /// Lists the built-in custom emoji stickers usable as forum topic icons.
@@ -1906,9 +2015,9 @@ class Bot {
       _l(await call('getForumTopicIconStickers')).map(Sticker.new).toList();
 
   /// Creates a new topic in a forum-enabled supergroup.
-  Future<ForumTopic> createForumTopic(
-    Object chatId,
-    String name, {
+  Future<ForumTopic> createForumTopic({
+    required Object chatId,
+    required String name,
     int? iconColor,
     String? iconCustomEmojiId,
   }) async =>
@@ -1925,9 +2034,9 @@ class Bot {
       );
 
   /// Renames a forum topic and/or changes its icon.
-  Future<bool> editForumTopic(
-    Object chatId,
-    int messageThreadId, {
+  Future<bool> editForumTopic({
+    required Object chatId,
+    required int messageThreadId,
     String? name,
     String? iconCustomEmojiId,
   }) async =>
@@ -1942,7 +2051,10 @@ class Bot {
       );
 
   /// Closes a forum topic (prevents new messages until reopened).
-  Future<bool> closeForumTopic(Object chatId, int messageThreadId) async => _b(
+  Future<bool> closeForumTopic({
+    required Object chatId,
+    required int messageThreadId,
+  }) async => _b(
         await call(
           'closeForumTopic',
           {'chat_id': chatId, 'message_thread_id': messageThreadId},
@@ -1950,7 +2062,10 @@ class Bot {
       );
 
   /// Reopens a previously closed forum topic.
-  Future<bool> reopenForumTopic(Object chatId, int messageThreadId) async => _b(
+  Future<bool> reopenForumTopic({
+    required Object chatId,
+    required int messageThreadId,
+  }) async => _b(
         await call(
           'reopenForumTopic',
           {'chat_id': chatId, 'message_thread_id': messageThreadId},
@@ -1958,7 +2073,10 @@ class Bot {
       );
 
   /// Deletes a forum topic and every message inside it.
-  Future<bool> deleteForumTopic(Object chatId, int messageThreadId) async => _b(
+  Future<bool> deleteForumTopic({
+    required Object chatId,
+    required int messageThreadId,
+  }) async => _b(
         await call(
           'deleteForumTopic',
           {'chat_id': chatId, 'message_thread_id': messageThreadId},
@@ -1966,10 +2084,10 @@ class Bot {
       );
 
   /// Unpins every message pinned within a specific forum topic.
-  Future<bool> unpinAllForumTopicMessages(
-    Object chatId,
-    int messageThreadId,
-  ) async =>
+  Future<bool> unpinAllForumTopicMessages({
+    required Object chatId,
+    required int messageThreadId,
+  }) async =>
       _b(
         await call(
           'unpinAllForumTopicMessages',
@@ -1978,28 +2096,41 @@ class Bot {
       );
 
   /// Renames the forum's built-in "General" topic.
-  Future<bool> editGeneralForumTopic(Object chatId, String name) async => _b(
+  Future<bool> editGeneralForumTopic({
+    required Object chatId,
+    required String name,
+  }) async => _b(
         await call('editGeneralForumTopic', {'chat_id': chatId, 'name': name}),
       );
 
   /// Closes the "General" forum topic.
-  Future<bool> closeGeneralForumTopic(Object chatId) async =>
+  Future<bool> closeGeneralForumTopic({
+    required Object chatId,
+  }) async =>
       _b(await call('closeGeneralForumTopic', {'chat_id': chatId}));
 
   /// Reopens the "General" forum topic.
-  Future<bool> reopenGeneralForumTopic(Object chatId) async =>
+  Future<bool> reopenGeneralForumTopic({
+    required Object chatId,
+  }) async =>
       _b(await call('reopenGeneralForumTopic', {'chat_id': chatId}));
 
   /// Hides the "General" forum topic from the topic list.
-  Future<bool> hideGeneralForumTopic(Object chatId) async =>
+  Future<bool> hideGeneralForumTopic({
+    required Object chatId,
+  }) async =>
       _b(await call('hideGeneralForumTopic', {'chat_id': chatId}));
 
   /// Unhides the "General" forum topic.
-  Future<bool> unhideGeneralForumTopic(Object chatId) async =>
+  Future<bool> unhideGeneralForumTopic({
+    required Object chatId,
+  }) async =>
       _b(await call('unhideGeneralForumTopic', {'chat_id': chatId}));
 
   /// Unpins every message pinned within the "General" forum topic.
-  Future<bool> unpinAllGeneralForumTopicMessages(Object chatId) async =>
+  Future<bool> unpinAllGeneralForumTopicMessages({
+    required Object chatId,
+  }) async =>
       _b(await call('unpinAllGeneralForumTopicMessages', {'chat_id': chatId}));
 
   /// Responds to a button press from an [InlineKeyboardButton.callback] button.
@@ -2007,8 +2138,8 @@ class Bot {
   /// You should call this for *every* callback query you receive, even with no
   /// arguments, so Telegram stops showing a loading spinner on the button. Set
   /// [showAlert] to show the response as a popup instead of a toast.
-  Future<bool> answerCallbackQuery(
-    String callbackQueryId, {
+  Future<bool> answerCallbackQuery({
+    required String callbackQueryId,
     String? text,
     bool? showAlert,
     String? url,
@@ -2026,8 +2157,8 @@ class Bot {
 
   /// Sets the list of commands shown in the chat's `/` menu, optionally scoped
   /// via [scope]/[languageCode].
-  Future<bool> setMyCommands(
-    List<Json> commands, {
+  Future<bool> setMyCommands({
+    required List<Json> commands,
     Json? scope,
     String? languageCode,
   }) async =>
@@ -2159,7 +2290,7 @@ class Bot {
     bool? forChannels,
   }) async =>
       ChatAdministratorRights.fromJson(
-        _o(
+        raw: _o(
           await call('getMyDefaultAdministratorRights', {
             if (forChannels != null) 'for_channels': forChannels,
           }),
@@ -2168,9 +2299,9 @@ class Bot {
 
   /// Responds to an inline query (`@yourbot ...` typed in any chat) with a list
   /// of [results] the user can pick from.
-  Future<bool> answerInlineQuery(
-    String inlineQueryId,
-    List<InlineQueryResult> results, {
+  Future<bool> answerInlineQuery({
+    required String inlineQueryId,
+    required List<InlineQueryResult> results,
     int? cacheTime,
     bool? isPersonal,
     String? nextOffset,
@@ -2188,10 +2319,10 @@ class Bot {
       );
 
   /// Sends a [result] back to a Web App that was opened via a `switch_inline_query`-style button.
-  Future<SentWebAppMessage> answerWebAppQuery(
-    String webAppQueryId,
-    InlineQueryResult result,
-  ) async =>
+  Future<SentWebAppMessage> answerWebAppQuery({
+    required String webAppQueryId,
+    required InlineQueryResult result,
+  }) async =>
       SentWebAppMessage(
         _o(
           await call(
@@ -2202,9 +2333,9 @@ class Bot {
       );
 
   /// Pre-uploads an inline message result so it can be reused efficiently across many users.
-  Future<PreparedInlineMessage> savePreparedInlineMessage(
-    int userId,
-    InlineQueryResult result, {
+  Future<PreparedInlineMessage> savePreparedInlineMessage({
+    required int userId,
+    required InlineQueryResult result,
     bool? allowUserChats,
     bool? allowBotChats,
     bool? allowGroupChats,
@@ -2227,13 +2358,13 @@ class Bot {
   /// Sends an invoice for a payment (physical goods, digital goods, or
   /// Telegram Stars). Use [providerToken] for a payment provider, or leave it
   /// empty when charging in Telegram Stars (`currency: 'XTR'`).
-  Future<Message> sendInvoice(
-    Object chatId,
-    String title,
-    String description,
-    String payload,
-    String currency,
-    List<Json> prices, {
+  Future<Message> sendInvoice({
+    required Object chatId,
+    required String title,
+    required String description,
+    required String payload,
+    required String currency,
+    required List<Json> prices,
     int? messageThreadId,
     String? providerToken,
     int? maxTipAmount,
@@ -2302,12 +2433,12 @@ class Bot {
       );
 
   /// Creates a standalone payment link for an invoice, without sending it to a chat.
-  Future<String> createInvoiceLink(
-    String title,
-    String description,
-    String payload,
-    String currency,
-    List<Json> prices, {
+  Future<String> createInvoiceLink({
+    required String title,
+    required String description,
+    required String payload,
+    required String currency,
+    required List<Json> prices,
     String? businessConnectionId,
     String? providerToken,
     int? subscriptionPeriod,
@@ -2360,9 +2491,9 @@ class Bot {
       );
 
   /// Responds to a shipping query raised for an invoice with flexible shipping options.
-  Future<bool> answerShippingQuery(
-    String shippingQueryId,
-    bool ok, {
+  Future<bool> answerShippingQuery({
+    required String shippingQueryId,
+    required bool ok,
     List<Json>? shippingOptions,
     String? errorMessage,
   }) async =>
@@ -2377,9 +2508,9 @@ class Bot {
 
   /// Responds to the final pre-checkout confirmation before payment is captured.
   /// Must be answered within 10 seconds or the payment is cancelled.
-  Future<bool> answerPreCheckoutQuery(
-    String preCheckoutQueryId,
-    bool ok, {
+  Future<bool> answerPreCheckoutQuery({
+    required String preCheckoutQueryId,
+    required bool ok,
     String? errorMessage,
   }) async =>
       _b(
@@ -2405,10 +2536,10 @@ class Bot {
       );
 
   /// Refunds a successful payment that was made in Telegram Stars.
-  Future<bool> refundStarPayment(
-    int userId,
-    String telegramPaymentChargeId,
-  ) async =>
+  Future<bool> refundStarPayment({
+    required int userId,
+    required String telegramPaymentChargeId,
+  }) async =>
       _b(
         await call('refundStarPayment', {
           'user_id': userId,
@@ -2417,11 +2548,11 @@ class Bot {
       );
 
   /// Cancels or reactivates a user's recurring Telegram Stars subscription payment.
-  Future<bool> editUserStarSubscription(
-    int userId,
-    String telegramPaymentChargeId,
-    bool isCanceled,
-  ) async =>
+  Future<bool> editUserStarSubscription({
+    required int userId,
+    required String telegramPaymentChargeId,
+    required bool isCanceled,
+  }) async =>
       _b(
         await call('editUserStarSubscription', {
           'user_id': userId,
@@ -2431,9 +2562,9 @@ class Bot {
       );
 
   /// Sends a Telegram Game (an HTML5 game registered with @BotFather).
-  Future<Message> sendGame(
-    int chatId,
-    String gameShortName, {
+  Future<Message> sendGame({
+    required int chatId,
+    required String gameShortName,
     String? businessConnectionId,
     int? messageThreadId,
     bool? disableNotification,
@@ -2468,9 +2599,9 @@ class Bot {
   ///
   /// Returns the edited [Message], or `true` when editing an inline
   /// message identified only by [inlineMessageId].
-  Future<Object> setGameScore(
-    int userId,
-    int score, {
+  Future<Object> setGameScore({
+    required int userId,
+    required int score,
     bool? force,
     bool? disableEditMessage,
     int? chatId,
@@ -2491,8 +2622,8 @@ class Bot {
       );
 
   /// Fetches the high score table for a game message.
-  Future<List<GameHighScore>> getGameHighScores(
-    int userId, {
+  Future<List<GameHighScore>> getGameHighScores({
+    required int userId,
     int? chatId,
     int? messageId,
     String? inlineMessageId,
@@ -2507,9 +2638,9 @@ class Bot {
       ).map(GameHighScore.new).toList();
 
   /// Sends a sticker from a `file_id`, URL, or local upload.
-  Future<Message> sendSticker(
-    Object chatId,
-    InputFile sticker, {
+  Future<Message> sendSticker({
+    required Object chatId,
+    required InputFile sticker,
     String? businessConnectionId,
     int? messageThreadId,
     String? emoji,
@@ -2546,13 +2677,15 @@ class Bot {
       );
 
   /// Fetches metadata and every sticker in a named sticker set.
-  Future<StickerSet> getStickerSet(String name) async =>
+  Future<StickerSet> getStickerSet({
+    required String name,
+  }) async =>
       StickerSet(_o(await call('getStickerSet', {'name': name})));
 
   /// Resolves a list of custom emoji IDs into full sticker information.
-  Future<List<Sticker>> getCustomEmojiStickers(
-    List<String> customEmojiIds,
-  ) async =>
+  Future<List<Sticker>> getCustomEmojiStickers({
+    required List<String> customEmojiIds,
+  }) async =>
       _l(
         await call(
           'getCustomEmojiStickers',
@@ -2562,11 +2695,11 @@ class Bot {
 
   /// Uploads a file to be later reused as a sticker in [createNewStickerSet]
   /// or [addStickerToSet], returning a reusable `file_id`.
-  Future<TelegramFile> uploadStickerFile(
-    int userId,
-    InputFile sticker,
-    StickerFormat stickerFormat,
-  ) async =>
+  Future<TelegramFile> uploadStickerFile({
+    required int userId,
+    required InputFile sticker,
+    required StickerFormat stickerFormat,
+  }) async =>
       TelegramFile(
         _o(
           await call(
@@ -2578,11 +2711,11 @@ class Bot {
       );
 
   /// Creates a new sticker set owned by [userId].
-  Future<bool> createNewStickerSet(
-    int userId,
-    String name,
-    String title,
-    List<InputSticker> stickers, {
+  Future<bool> createNewStickerSet({
+    required int userId,
+    required String name,
+    required String title,
+    required List<InputSticker> stickers,
     StickerType? stickerType,
     bool? needsRepainting,
   }) async {
@@ -2617,11 +2750,11 @@ class Bot {
   }
 
   /// Adds one more sticker to an existing set created by the bot.
-  Future<bool> addStickerToSet(
-    int userId,
-    String name,
-    InputSticker sticker,
-  ) async {
+  Future<bool> addStickerToSet({
+    required int userId,
+    required String name,
+    required InputSticker sticker,
+  }) async {
     final files = <String, InputFile>{};
     String ref;
     if (sticker.sticker.isUpload) {
@@ -2640,7 +2773,10 @@ class Bot {
   }
 
   /// Moves a sticker to a new zero-based [position] within its set.
-  Future<bool> setStickerPositionInSet(String sticker, int position) async =>
+  Future<bool> setStickerPositionInSet({
+    required String sticker,
+    required int position,
+  }) async =>
       _b(
         await call(
           'setStickerPositionInSet',
@@ -2649,16 +2785,18 @@ class Bot {
       );
 
   /// Removes a sticker from its set.
-  Future<bool> deleteStickerFromSet(String sticker) async =>
+  Future<bool> deleteStickerFromSet({
+    required String sticker,
+  }) async =>
       _b(await call('deleteStickerFromSet', {'sticker': sticker}));
 
   /// Replaces an existing sticker in a set with a new one, preserving its position.
-  Future<bool> replaceStickerInSet(
-    int userId,
-    String name,
-    String oldSticker,
-    InputSticker sticker,
-  ) async {
+  Future<bool> replaceStickerInSet({
+    required int userId,
+    required String name,
+    required String oldSticker,
+    required InputSticker sticker,
+  }) async {
     final files = <String, InputFile>{};
     String ref;
     if (sticker.sticker.isUpload) {
@@ -2682,10 +2820,10 @@ class Bot {
   }
 
   /// Changes the emoji associated with a sticker.
-  Future<bool> setStickerEmojiList(
-    String sticker,
-    List<String> emojiList,
-  ) async =>
+  Future<bool> setStickerEmojiList({
+    required String sticker,
+    required List<String> emojiList,
+  }) async =>
       _b(
         await call(
           'setStickerEmojiList',
@@ -2694,8 +2832,8 @@ class Bot {
       );
 
   /// Changes the search keywords associated with a sticker.
-  Future<bool> setStickerKeywords(
-    String sticker, {
+  Future<bool> setStickerKeywords({
+    required String sticker,
     List<String>? keywords,
   }) async =>
       _b(
@@ -2706,8 +2844,8 @@ class Bot {
       );
 
   /// Changes where a mask sticker is anchored on a face.
-  Future<bool> setStickerMaskPosition(
-    String sticker, {
+  Future<bool> setStickerMaskPosition({
+    required String sticker,
     Json? maskPosition,
   }) async =>
       _b(
@@ -2718,14 +2856,17 @@ class Bot {
       );
 
   /// Renames a sticker set.
-  Future<bool> setStickerSetTitle(String name, String title) async =>
+  Future<bool> setStickerSetTitle({
+    required String name,
+    required String title,
+  }) async =>
       _b(await call('setStickerSetTitle', {'name': name, 'title': title}));
 
   /// Sets the thumbnail shown for a sticker set in the sticker picker.
-  Future<bool> setStickerSetThumbnail(
-    String name,
-    int userId,
-    StickerFormat format, {
+  Future<bool> setStickerSetThumbnail({
+    required String name,
+    required int userId,
+    required StickerFormat format,
     InputFile? thumbnail,
   }) async =>
       _b(
@@ -2737,8 +2878,8 @@ class Bot {
       );
 
   /// Sets the thumbnail of a custom emoji sticker set from one of its own stickers.
-  Future<bool> setCustomEmojiStickerSetThumbnail(
-    String name, {
+  Future<bool> setCustomEmojiStickerSetThumbnail({
+    required String name,
     String? customEmojiId,
   }) async =>
       _b(
@@ -2749,11 +2890,16 @@ class Bot {
       );
 
   /// Deletes an entire sticker set owned by the bot.
-  Future<bool> deleteStickerSet(String name) async =>
+  Future<bool> deleteStickerSet({
+    required String name,
+  }) async =>
       _b(await call('deleteStickerSet', {'name': name}));
 
   /// Lists the boosts a user has applied to a chat.
-  Future<UserChatBoosts> getUserChatBoosts(Object chatId, int userId) async =>
+  Future<UserChatBoosts> getUserChatBoosts({
+    required Object chatId,
+    required int userId,
+  }) async =>
       UserChatBoosts(
         _o(
           await call(
@@ -2770,7 +2916,10 @@ class Bot {
   /// can use this method — see https://telegram.org/verify to apply. Call
   /// this again with a new [customDescription] to update it; there's no
   /// separate "update" method. Use [removeUserVerification] to remove the badge.
-  Future<bool> verifyUser(int userId, {String? customDescription}) async => _b(
+  Future<bool> verifyUser({
+    required int userId,
+    String? customDescription,
+  }) async => _b(
         await call('verifyUser', {
           'user_id': userId,
           if (customDescription != null)
@@ -2781,7 +2930,10 @@ class Bot {
   /// Verifies [chatId] (a group, supergroup, or channel — not a direct
   /// messages chat) on behalf of the organization that owns the bot. See
   /// [verifyUser] for details on the approval this requires.
-  Future<bool> verifyChat(Object chatId, {String? customDescription}) async =>
+  Future<bool> verifyChat({
+    required Object chatId,
+    String? customDescription,
+  }) async =>
       _b(
         await call('verifyChat', {
           'chat_id': chatId,
@@ -2791,11 +2943,15 @@ class Bot {
       );
 
   /// Removes a third-party verification badge previously granted to [userId] via [verifyUser].
-  Future<bool> removeUserVerification(int userId) async =>
+  Future<bool> removeUserVerification({
+    required int userId,
+  }) async =>
       _b(await call('removeUserVerification', {'user_id': userId}));
 
   /// Removes a third-party verification badge previously granted to [chatId] via [verifyChat].
-  Future<bool> removeChatVerification(Object chatId) async =>
+  Future<bool> removeChatVerification({
+    required Object chatId,
+  }) async =>
       _b(await call('removeChatVerification', {'chat_id': chatId}));
 
   /// Returns the bot's current balance of Telegram Stars as a `StarAmount` object (raw JSON).
@@ -2804,7 +2960,9 @@ class Bot {
 
   /// Sets the bot's profile photo. [photo] can be a static image
   /// ([InputProfilePhotoStatic]) or a short animation ([InputProfilePhotoAnimated]).
-  Future<bool> setMyProfilePhoto(InputProfilePhoto photo) async {
+  Future<bool> setMyProfilePhoto({
+    required InputProfilePhoto photo,
+  }) async {
     final files = <String, InputFile>{};
     final photoJson = photo.toJson(files);
     return _b(await call('setMyProfilePhoto', {'photo': photoJson}, files));
@@ -2815,8 +2973,8 @@ class Bot {
       _b(await call('removeMyProfilePhoto'));
 
   /// Returns the audio files a user has added to their profile, as a `UserProfileAudios` object (raw JSON).
-  Future<UserProfileAudios> getUserProfileAudios(
-    int userId, {
+  Future<UserProfileAudios> getUserProfileAudios({
+    required int userId,
     int? offset,
     int? limit,
   }) async =>
@@ -2833,22 +2991,26 @@ class Bot {
   /// Returns the current access token of a bot managed by this bot ([botId]
   /// is the managed bot's user ID). Only available to managing bots — see
   /// https://core.telegram.org/bots/features#secretary-bots.
-  Future<String> getManagedBotToken(int botId) async =>
+  Future<String> getManagedBotToken({
+    required int botId,
+  }) async =>
       _s(await call('getManagedBotToken', {'bot_id': botId}));
 
   /// Generates a new access token for a bot managed by this bot ([botId] is
   /// the managed bot's user ID), invalidating the previous one. Use this to
   /// rotate a managed bot's token, e.g. after a suspected compromise.
-  Future<String> replaceManagedBotToken(int botId) async =>
+  Future<String> replaceManagedBotToken({
+    required int botId,
+  }) async =>
       _s(await call('replaceManagedBotToken', {'bot_id': botId}));
 
   /// Stores a keyboard [button] (e.g. a users/chat/managed-bot request
   /// button — see [KeyboardButton]) for reuse from a Mini App via
   /// `sendPreparedMessage`. The `allow*Chats` flags mirror
   /// [Bot.savePreparedInlineMessage]'s.
-  Future<PreparedInlineMessage> savePreparedKeyboardButton(
-    int userId,
-    KeyboardButton button, {
+  Future<PreparedInlineMessage> savePreparedKeyboardButton({
+    required int userId,
+    required KeyboardButton button,
     bool? allowUserChats,
     bool? allowBotChats,
     bool? allowGroupChats,
@@ -2869,11 +3031,11 @@ class Bot {
       );
 
   /// Removes one user's reaction from a message in a chat the bot administers.
-  Future<bool> deleteMessageReaction(
-    Object chatId,
-    int messageId,
-    int userId,
-  ) async =>
+  Future<bool> deleteMessageReaction({
+    required Object chatId,
+    required int messageId,
+    required int userId,
+  }) async =>
       _b(
         await call('deleteMessageReaction', {
           'chat_id': chatId,
@@ -2883,7 +3045,10 @@ class Bot {
       );
 
   /// Removes all reactions from a message in a chat the bot administers.
-  Future<bool> deleteAllMessageReactions(Object chatId, int messageId) async =>
+  Future<bool> deleteAllMessageReactions({
+    required Object chatId,
+    required int messageId,
+  }) async =>
       _b(
         await call('deleteAllMessageReactions', {
           'chat_id': chatId,
@@ -2893,9 +3058,9 @@ class Bot {
 
   /// Approves a suggested post in a channel direct-messages chat. If
   /// [sendDate] is omitted, the post is published immediately.
-  Future<bool> approveSuggestedPost(
-    int chatId,
-    int messageId, {
+  Future<bool> approveSuggestedPost({
+    required int chatId,
+    required int messageId,
     int? sendDate,
   }) async =>
       _b(
@@ -2908,9 +3073,9 @@ class Bot {
 
   /// Declines a suggested post in a channel direct-messages chat, optionally
   /// explaining why via [comment].
-  Future<bool> declineSuggestedPost(
-    int chatId,
-    int messageId, {
+  Future<bool> declineSuggestedPost({
+    required int chatId,
+    required int messageId,
     String? comment,
   }) async =>
       _b(
@@ -2922,10 +3087,10 @@ class Bot {
       );
 
   /// Sends a checklist on behalf of a connected business account.
-  Future<Message> sendChecklist(
-    String businessConnectionId,
-    int chatId,
-    InputChecklist checklist, {
+  Future<Message> sendChecklist({
+    required String businessConnectionId,
+    required int chatId,
+    required InputChecklist checklist,
     bool? disableNotification,
     bool? protectContent,
     String? messageEffectId,
@@ -2950,11 +3115,11 @@ class Bot {
       );
 
   /// Edits a checklist previously sent on behalf of a connected business account.
-  Future<Message> editMessageChecklist(
-    String businessConnectionId,
-    int chatId,
-    int messageId,
-    InputChecklist checklist, {
+  Future<Message> editMessageChecklist({
+    required String businessConnectionId,
+    required int chatId,
+    required int messageId,
+    required InputChecklist checklist,
     InlineKeyboardMarkup? replyMarkup,
   }) async =>
       Message(
@@ -2976,10 +3141,10 @@ class Bot {
   /// callback query the guest triggered), the message is sent as an
   /// *ephemeral* message visible only to that user — see
   /// [editEphemeralMessageText] and friends for editing it afterwards.
-  Future<Message> sendLivePhoto(
-    Object chatId,
-    InputFile photo,
-    InputFile video, {
+  Future<Message> sendLivePhoto({
+    required Object chatId,
+    required InputFile photo,
+    required InputFile video,
     String? businessConnectionId,
     int? messageThreadId,
     String? caption,
@@ -3036,10 +3201,10 @@ class Bot {
 
   /// Answers a query sent by a guest (an unauthenticated user browsing via
   /// Guest Mode), delivering [result] back to them.
-  Future<SentWebAppMessage> answerGuestQuery(
-    String guestQueryId,
-    InlineQueryResult result,
-  ) async =>
+  Future<SentWebAppMessage> answerGuestQuery({
+    required String guestQueryId,
+    required InlineQueryResult result,
+  }) async =>
       SentWebAppMessage(
         _o(
           await call(
@@ -3056,9 +3221,9 @@ class Bot {
   /// [Json] is used given how many block types that structure can contain —
   /// see https://core.telegram.org/bots/api#inputrichmessage for the shape,
   /// or fall back to [call] directly if this typed wrapper doesn't fit.
-  Future<Message> sendRichMessage(
-    Object chatId,
-    Json richMessage, {
+  Future<Message> sendRichMessage({
+    required Object chatId,
+    required Json richMessage,
     String? businessConnectionId,
     int? messageThreadId,
     bool? disableNotification,
@@ -3093,9 +3258,9 @@ class Bot {
   /// [sendMessageDraft] streams plain text — useful for showing a rich
   /// message being "typed out" block by block. See [sendRichMessage] for
   /// the shape of [richMessage].
-  Future<bool> sendRichMessageDraft(
-    Object chatId,
-    Json richMessage, {
+  Future<bool> sendRichMessageDraft({
+    required Object chatId,
+    required Json richMessage,
     String? businessConnectionId,
     int? messageThreadId,
     ReplyParameters? replyParameters,
@@ -3117,10 +3282,10 @@ class Bot {
   /// resolving the request per [result]: `'approve'` to let the user join,
   /// `'decline'` to reject them, or `'queue'` to leave the decision to
   /// other administrators.
-  Future<bool> answerChatJoinRequestQuery(
-    String chatJoinRequestQueryId,
-    String result,
-  ) async =>
+  Future<bool> answerChatJoinRequestQuery({
+    required String chatJoinRequestQueryId,
+    required String result,
+  }) async =>
       _b(
         await call('answerChatJoinRequestQuery', {
           'chat_join_request_query_id': chatJoinRequestQueryId,
@@ -3133,10 +3298,10 @@ class Bot {
   /// approving them via [answerChatJoinRequestQuery]. [webApp] should be
   /// shaped like `WebAppInfo` (a `url` field); raw [Json] is used for
   /// consistency with [answerWebAppQuery].
-  Future<SentWebAppMessage> sendChatJoinRequestWebApp(
-    String chatJoinRequestQueryId,
-    Json webApp,
-  ) async =>
+  Future<SentWebAppMessage> sendChatJoinRequestWebApp({
+    required String chatJoinRequestQueryId,
+    required Json webApp,
+  }) async =>
       SentWebAppMessage(
         _o(
           await call('sendChatJoinRequestWebApp', {
@@ -3152,11 +3317,11 @@ class Bot {
   ///
   /// Returns the edited [Message], or `true` when Telegram doesn't send a
   /// full message object back.
-  Future<Object> editEphemeralMessageText(
-    Object chatId,
-    int receiverUserId,
-    int ephemeralMessageId,
-    String text, {
+  Future<Object> editEphemeralMessageText({
+    required Object chatId,
+    required int receiverUserId,
+    required int ephemeralMessageId,
+    required String text,
     String? businessConnectionId,
     ParseMode? parseMode,
     List<Json>? entities,
@@ -3180,11 +3345,11 @@ class Bot {
       );
 
   /// Replaces the media of an ephemeral message. See [editEphemeralMessageText].
-  Future<Object> editEphemeralMessageMedia(
-    Object chatId,
-    int receiverUserId,
-    int ephemeralMessageId,
-    InputMedia media, {
+  Future<Object> editEphemeralMessageMedia({
+    required Object chatId,
+    required int receiverUserId,
+    required int ephemeralMessageId,
+    required InputMedia media,
     String? businessConnectionId,
     InlineKeyboardMarkup? replyMarkup,
   }) async {
@@ -3223,10 +3388,10 @@ class Bot {
   }
 
   /// Edits the caption of an ephemeral message. See [editEphemeralMessageText].
-  Future<Object> editEphemeralMessageCaption(
-    Object chatId,
-    int receiverUserId,
-    int ephemeralMessageId, {
+  Future<Object> editEphemeralMessageCaption({
+    required Object chatId,
+    required int receiverUserId,
+    required int ephemeralMessageId,
     String? businessConnectionId,
     String? caption,
     ParseMode? parseMode,
@@ -3251,10 +3416,10 @@ class Bot {
       );
 
   /// Replaces the inline keyboard of an ephemeral message. See [editEphemeralMessageText].
-  Future<Object> editEphemeralMessageReplyMarkup(
-    Object chatId,
-    int receiverUserId,
-    int ephemeralMessageId, {
+  Future<Object> editEphemeralMessageReplyMarkup({
+    required Object chatId,
+    required int receiverUserId,
+    required int ephemeralMessageId,
     String? businessConnectionId,
     InlineKeyboardMarkup? replyMarkup,
   }) async =>
@@ -3270,11 +3435,11 @@ class Bot {
       );
 
   /// Deletes an ephemeral message. See [editEphemeralMessageText].
-  Future<bool> deleteEphemeralMessage(
-    Object chatId,
-    int receiverUserId,
-    int ephemeralMessageId,
-  ) async =>
+  Future<bool> deleteEphemeralMessage({
+    required Object chatId,
+    required int receiverUserId,
+    required int ephemeralMessageId,
+  }) async =>
       _b(
         await call('deleteEphemeralMessage', {
           'chat_id': chatId,
@@ -3284,9 +3449,9 @@ class Bot {
       );
 
   /// Changes a user's emoji status on the bot's behalf (requires prior user consent via a Mini App).
-  Future<bool> setUserEmojiStatus(
-    String businessConnectionId,
-    int userId, {
+  Future<bool> setUserEmojiStatus({
+    required String businessConnectionId,
+    required int userId,
     String? emojiStatusCustomEmojiId,
     int? emojiStatusExpirationDate,
   }) async =>
@@ -3302,9 +3467,9 @@ class Bot {
       );
 
   /// Fetches details about a Telegram Business connection by its ID.
-  Future<BusinessConnection> getBusinessConnection(
-    String businessConnectionId,
-  ) async =>
+  Future<BusinessConnection> getBusinessConnection({
+    required String businessConnectionId,
+  }) async =>
       BusinessConnection(
         _o(
           await call(
@@ -3315,9 +3480,9 @@ class Bot {
       );
 
   /// Changes the first/last name on a connected business account.
-  Future<bool> setBusinessAccountName(
-    String businessConnectionId,
-    String firstName, {
+  Future<bool> setBusinessAccountName({
+    required String businessConnectionId,
+    required String firstName,
     String? lastName,
   }) async =>
       _b(
@@ -3329,8 +3494,8 @@ class Bot {
       );
 
   /// Changes the username on a connected business account.
-  Future<bool> setBusinessAccountUsername(
-    String businessConnectionId, {
+  Future<bool> setBusinessAccountUsername({
+    required String businessConnectionId,
     String? username,
   }) async =>
       _b(
@@ -3341,8 +3506,8 @@ class Bot {
       );
 
   /// Changes the bio on a connected business account.
-  Future<bool> setBusinessAccountBio(
-    String businessConnectionId, {
+  Future<bool> setBusinessAccountBio({
+    required String businessConnectionId,
     String? bio,
   }) async =>
       _b(
@@ -3353,9 +3518,9 @@ class Bot {
       );
 
   /// Sets the profile photo of a connected business account.
-  Future<bool> setBusinessAccountProfilePhoto(
-    String businessConnectionId,
-    InputProfilePhoto photo, {
+  Future<bool> setBusinessAccountProfilePhoto({
+    required String businessConnectionId,
+    required InputProfilePhoto photo,
     bool? isPublic,
   }) async {
     final files = <String, InputFile>{};
@@ -3374,8 +3539,8 @@ class Bot {
   }
 
   /// Removes the profile photo of a connected business account.
-  Future<bool> removeBusinessAccountProfilePhoto(
-    String businessConnectionId, {
+  Future<bool> removeBusinessAccountProfilePhoto({
+    required String businessConnectionId,
     bool? isPublic,
   }) async =>
       _b(
@@ -3386,11 +3551,11 @@ class Bot {
       );
 
   /// Configures which gift types a connected business account accepts, via [acceptedGiftTypes].
-  Future<bool> setBusinessAccountGiftSettings(
-    String businessConnectionId,
-    bool showGiftButton,
-    AcceptedGiftTypes acceptedGiftTypes,
-  ) async =>
+  Future<bool> setBusinessAccountGiftSettings({
+    required String businessConnectionId,
+    required bool showGiftButton,
+    required AcceptedGiftTypes acceptedGiftTypes,
+  }) async =>
       _b(
         await call('setBusinessAccountGiftSettings', {
           'business_connection_id': businessConnectionId,
@@ -3400,9 +3565,9 @@ class Bot {
       );
 
   /// Returns the Telegram Stars balance of a connected business account.
-  Future<StarAmount> getBusinessAccountStarBalance(
-    String businessConnectionId,
-  ) async =>
+  Future<StarAmount> getBusinessAccountStarBalance({
+    required String businessConnectionId,
+  }) async =>
       StarAmount(
         _o(
           await call(
@@ -3413,10 +3578,10 @@ class Bot {
       );
 
   /// Transfers Telegram Stars out of a connected business account.
-  Future<bool> transferBusinessAccountStars(
-    String businessConnectionId,
-    int starCount,
-  ) async =>
+  Future<bool> transferBusinessAccountStars({
+    required String businessConnectionId,
+    required int starCount,
+  }) async =>
       _b(
         await call('transferBusinessAccountStars', {
           'business_connection_id': businessConnectionId,
@@ -3425,8 +3590,8 @@ class Bot {
       );
 
   /// Lists gifts owned by a connected business account.
-  Future<OwnedGifts> getBusinessAccountGifts(
-    String businessConnectionId, {
+  Future<OwnedGifts> getBusinessAccountGifts({
+    required String businessConnectionId,
     bool? excludeUnsaved,
     bool? excludeSaved,
     bool? excludeUnlimited,
@@ -3457,8 +3622,8 @@ class Bot {
       );
 
   /// Lists gifts publicly displayed on a user's profile.
-  Future<OwnedGifts> getUserGifts(
-    int userId, {
+  Future<OwnedGifts> getUserGifts({
+    required int userId,
     bool? excludeUnlimited,
     bool? excludeLimitedUpgradable,
     bool? excludeLimitedNonUpgradable,
@@ -3488,8 +3653,8 @@ class Bot {
       );
 
   /// Lists gifts publicly displayed on a channel chat's profile.
-  Future<OwnedGifts> getChatGifts(
-    Object chatId, {
+  Future<OwnedGifts> getChatGifts({
+    required Object chatId,
     bool? excludeUnlimited,
     bool? excludeLimitedUpgradable,
     bool? excludeLimitedNonUpgradable,
@@ -3519,10 +3684,10 @@ class Bot {
       );
 
   /// Converts a regular gift owned by a business account into Telegram Stars.
-  Future<bool> convertGiftToStars(
-    String businessConnectionId,
-    String ownedGiftId,
-  ) async =>
+  Future<bool> convertGiftToStars({
+    required String businessConnectionId,
+    required String ownedGiftId,
+  }) async =>
       _b(
         await call('convertGiftToStars', {
           'business_connection_id': businessConnectionId,
@@ -3531,9 +3696,9 @@ class Bot {
       );
 
   /// Upgrades a regular gift owned by a business account into a unique gift.
-  Future<bool> upgradeGift(
-    String businessConnectionId,
-    String ownedGiftId, {
+  Future<bool> upgradeGift({
+    required String businessConnectionId,
+    required String ownedGiftId,
     bool? keepOriginalDetails,
     int? starCount,
   }) async =>
@@ -3548,10 +3713,10 @@ class Bot {
       );
 
   /// Transfers a unique gift owned by a business account to another owner.
-  Future<bool> transferGift(
-    String businessConnectionId,
-    String ownedGiftId,
-    int newOwnerChatId, {
+  Future<bool> transferGift({
+    required String businessConnectionId,
+    required String ownedGiftId,
+    required int newOwnerChatId,
     int? starCount,
   }) async =>
       _b(
@@ -3564,11 +3729,11 @@ class Bot {
       );
 
   /// Marks a message in a connected business account's chat as read.
-  Future<bool> readBusinessMessage(
-    String businessConnectionId,
-    int chatId,
-    int messageId,
-  ) async =>
+  Future<bool> readBusinessMessage({
+    required String businessConnectionId,
+    required int chatId,
+    required int messageId,
+  }) async =>
       _b(
         await call('readBusinessMessage', {
           'business_connection_id': businessConnectionId,
@@ -3578,10 +3743,10 @@ class Bot {
       );
 
   /// Deletes messages on behalf of a connected business account.
-  Future<bool> deleteBusinessMessages(
-    String businessConnectionId,
-    List<int> messageIds,
-  ) async =>
+  Future<bool> deleteBusinessMessages({
+    required String businessConnectionId,
+    required List<int> messageIds,
+  }) async =>
       _b(
         await call('deleteBusinessMessages', {
           'business_connection_id': businessConnectionId,
@@ -3590,10 +3755,10 @@ class Bot {
       );
 
   /// Posts a new Telegram Story on behalf of a connected business account.
-  Future<Story> postStory(
-    String businessConnectionId,
-    InputStoryContent content,
-    int activePeriod, {
+  Future<Story> postStory({
+    required String businessConnectionId,
+    required InputStoryContent content,
+    required int activePeriod,
     String? caption,
     ParseMode? parseMode,
     List<Json>? captionEntities,
@@ -3625,10 +3790,10 @@ class Bot {
   }
 
   /// Edits a previously posted Telegram Story.
-  Future<Story> editStory(
-    String businessConnectionId,
-    int storyId,
-    InputStoryContent content, {
+  Future<Story> editStory({
+    required String businessConnectionId,
+    required int storyId,
+    required InputStoryContent content,
     String? caption,
     ParseMode? parseMode,
     List<Json>? captionEntities,
@@ -3656,7 +3821,10 @@ class Bot {
   }
 
   /// Deletes a previously posted Telegram Story.
-  Future<bool> deleteStory(String businessConnectionId, int storyId) async =>
+  Future<bool> deleteStory({
+    required String businessConnectionId,
+    required int storyId,
+  }) async =>
       _b(
         await call('deleteStory', {
           'business_connection_id': businessConnectionId,
@@ -3669,11 +3837,11 @@ class Bot {
   /// been posted (or reposted) by this bot. Requires the
   /// `can_manage_stories` business bot right on both accounts. [activePeriod]
   /// must be one of `6 * 3600`, `12 * 3600`, `86400`, or `2 * 86400` seconds.
-  Future<Story> repostStory(
-    String businessConnectionId,
-    int fromChatId,
-    int fromStoryId,
-    int activePeriod, {
+  Future<Story> repostStory({
+    required String businessConnectionId,
+    required int fromChatId,
+    required int fromStoryId,
+    required int activePeriod,
     bool? postToChatPage,
     bool? protectContent,
   }) async =>
@@ -3695,8 +3863,8 @@ class Bot {
       Gifts(_o(await call('getAvailableGifts')));
 
   /// Sends a gift to a user or channel, optionally paid for in Telegram Stars.
-  Future<bool> sendGift(
-    String giftId, {
+  Future<bool> sendGift({
+    required String giftId,
     int? userId,
     Object? chatId,
     String? text,
@@ -3717,10 +3885,10 @@ class Bot {
       );
 
   /// Gifts a Telegram Premium subscription to a user.
-  Future<bool> giftPremiumSubscription(
-    int userId,
-    int monthCount,
-    int starCount, {
+  Future<bool> giftPremiumSubscription({
+    required int userId,
+    required int monthCount,
+    required int starCount,
     String? text,
     ParseMode? textParseMode,
     List<Json>? textEntities,
@@ -3737,7 +3905,10 @@ class Bot {
       );
 
   /// Reports validation errors on a user's Telegram Passport data, prompting them to resubmit.
-  Future<bool> setPassportDataErrors(int userId, List<Json> errors) async => _b(
+  Future<bool> setPassportDataErrors({
+    required int userId,
+    required List<Json> errors,
+  }) async => _b(
         await call(
           'setPassportDataErrors',
           {'user_id': userId, 'errors': errors},
@@ -3750,6 +3921,8 @@ class Bot {
   /// Always check `.isValid` on the result before trusting any of its
   /// fields — this confirms the data really came from Telegram and wasn't
   /// tampered with by the client.
-  WebAppInitData verifyWebAppInitData(String initData) =>
+  WebAppInitData verifyWebAppInitData({
+    required String initData,
+  }) =>
       webapp.verifyWebAppInitData(initData, token);
 }

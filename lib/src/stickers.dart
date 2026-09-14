@@ -4,6 +4,21 @@ import 'input_file.dart';
 
 /// A sticker to be added to a set via [Bot.addStickerToSet] or included in a
 /// new set via [Bot.createNewStickerSet].
+///
+/// ```dart
+/// final sticker = InputSticker(
+///   sticker: InputFile.path(path: 'assets/sticker.png'),
+///   format: StickerFormat.static,
+///   emojiList: ['😀', '😄'],
+/// );
+///
+/// await bot.createNewStickerSet(
+///   userId: update.userId!,
+///   name: 'my_pack_by_yourbot',
+///   title: 'My Pack',
+///   stickers: [sticker],
+/// );
+/// ```
 class InputSticker {
   /// The sticker file itself, typically uploaded via [InputFile.path]/[InputFile.bytes]
   /// or reused from [Bot.uploadStickerFile]'s returned `file_id`.
@@ -22,10 +37,10 @@ class InputSticker {
   final List<String>? keywords;
 
   /// Creates an input sticker from [sticker], its [format], and its [emojiList].
-  const InputSticker(
-    this.sticker,
-    this.format,
-    this.emojiList, {
+  const InputSticker({
+    required this.sticker,
+    required this.format,
+    required this.emojiList,
     this.maskPosition,
     this.keywords,
   });

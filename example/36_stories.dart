@@ -37,32 +37,31 @@ Future<void> main() async {
       // `activePeriod` (in seconds) is how long the story stays up — must
       // be one of 6h, 12h, 24h, or 48h.
       final story = await bot.postStory(
-        businessConnectionId,
-        InputStoryContentPhoto(InputFile.path('example/assets/story.jpg')),
-        24 * 3600,
+        businessConnectionId: businessConnectionId,
+        content: InputStoryContentPhoto(
+          photo: InputFile.path(path: 'example/assets/story.jpg'),
+        ),
+        activePeriod: 24 * 3600,
         caption: 'Posted via ptgb!',
       );
-      await bot.sendMessage(chatId, 'Story posted: ${story.id}');
+      await bot.sendMessage(chatId: chatId, text: 'Story posted: ${story.id}');
     } else if (text.startsWith('/edit_story ')) {
       final storyId = int.parse(text.substring('/edit_story '.length));
       await bot.editStory(
-        businessConnectionId,
-        storyId,
-        InputStoryContentPhoto(
-          InputFile.path('example/assets/story_updated.jpg'),
+        businessConnectionId: businessConnectionId,
+        storyId: storyId,
+        content: InputStoryContentPhoto(
+          photo: InputFile.path(path: 'example/assets/story_updated.jpg'),
         ),
         caption: 'Updated caption!',
       );
-      await bot.sendMessage(chatId, 'Story $storyId updated.');
+      await bot.sendMessage(chatId: chatId, text: 'Story $storyId updated.');
     } else if (text.startsWith('/delete_story ')) {
       final storyId = int.parse(text.substring('/delete_story '.length));
-      await bot.deleteStory(businessConnectionId, storyId);
-      await bot.sendMessage(chatId, 'Story $storyId deleted.');
+      await bot.deleteStory(businessConnectionId: businessConnectionId, storyId: storyId);
+      await bot.sendMessage(chatId: chatId, text: 'Story $storyId deleted.');
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /post_story, /edit_story <id>, or /delete_story <id>.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /post_story, /edit_story <id>, or /delete_story <id>.');
     }
   }
 }

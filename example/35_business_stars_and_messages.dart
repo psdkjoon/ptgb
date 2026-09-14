@@ -37,40 +37,31 @@ Future<void> main() async {
 
     if (text == '/star_balance') {
       final balance =
-          await bot.getBusinessAccountStarBalance(businessConnectionId);
-      await bot.sendMessage(
-        chatId,
-        'Business account Star balance: ${balance.amount}',
-      );
+          await bot.getBusinessAccountStarBalance(businessConnectionId: businessConnectionId);
+      await bot.sendMessage(chatId: chatId, text: 'Business account Star balance: ${balance.amount}');
     } else if (text == '/withdraw_stars') {
       // Moves Stars out of the connected business account into the bot's
       // own balance — requires the account's owner to have granted the
       // relevant right when connecting.
-      await bot.transferBusinessAccountStars(businessConnectionId, 100);
-      await bot.sendMessage(chatId, 'Transferred 100 Stars.');
+      await bot.transferBusinessAccountStars(businessConnectionId: businessConnectionId, starCount: 100);
+      await bot.sendMessage(chatId: chatId, text: 'Transferred 100 Stars.');
     } else if (text == '/mark_read') {
       final targetMessageId = update.replyToMessage?.messageId;
       if (targetMessageId != null) {
-        await bot.readBusinessMessage(
-          businessConnectionId,
-          chatId,
-          targetMessageId,
-        );
-        await bot.sendMessage(chatId, 'Marked as read.');
+        await bot.readBusinessMessage(businessConnectionId: businessConnectionId, chatId: chatId, messageId: targetMessageId);
+        await bot.sendMessage(chatId: chatId, text: 'Marked as read.');
       }
     } else if (text == '/delete_last') {
       final targetMessageId = update.replyToMessage?.messageId;
       if (targetMessageId != null) {
         // Accepts a batch of message IDs, same as `deleteMessages`.
-        await bot
-            .deleteBusinessMessages(businessConnectionId, [targetMessageId]);
-        await bot.sendMessage(chatId, 'Deleted.');
+        await bot.deleteBusinessMessages(
+            businessConnectionId: businessConnectionId,
+            messageIds: [targetMessageId],);
+        await bot.sendMessage(chatId: chatId, text: 'Deleted.');
       }
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /star_balance, /withdraw_stars, or reply with /mark_read or /delete_last.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /star_balance, /withdraw_stars, or reply with /mark_read or /delete_last.');
     }
   }
 }

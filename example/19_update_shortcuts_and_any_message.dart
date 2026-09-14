@@ -67,14 +67,14 @@ Future<void> main() async {
         final types = update.entities!.map((e) => e['type']).join(', ');
         lines.add('entities: $types');
       }
-      await bot.sendMessage(chatId, lines.join('\n'));
+      await bot.sendMessage(chatId: chatId, text: lines.join('\n'));
       continue;
     }
 
     // `caption` is the shortcut version of `anyMessage?.caption` — it
     // covers photos, videos, documents, etc. all at once.
     if (update.caption != null) {
-      await bot.sendMessage(chatId, 'Nice caption: "${update.caption}"');
+      await bot.sendMessage(chatId: chatId, text: 'Nice caption: "${update.caption}"');
       continue;
     }
 
@@ -92,50 +92,35 @@ Future<void> main() async {
     final photoSizes = msg.photo;
     if (photoSizes != null && photoSizes.isNotEmpty) {
       final largest = photoSizes.last;
-      await bot.sendMessage(
-        chatId,
-        'Got a photo! Largest size: '
-        '${largest.width}x${largest.height}, file_id: ${largest.fileId}',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Got a photo! Largest size: '
+        '${largest.width}x${largest.height}, file_id: ${largest.fileId}',);
       continue;
     }
 
     // Locations: plain `latitude`/`longitude` getters.
     final location = msg.location;
     if (location != null) {
-      await bot.sendMessage(
-        chatId,
-        'Location received: ${location.latitude}, ${location.longitude}',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Location received: ${location.latitude}, ${location.longitude}');
       continue;
     }
 
     // Documents: `fileName` and `mimeType` live alongside the usual `fileId`.
     final document = msg.document;
     if (document != null) {
-      await bot.sendMessage(
-        chatId,
-        'Document: ${document.fileName} (${document.mimeType})',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Document: ${document.fileName} (${document.mimeType})');
       continue;
     }
 
     // Contacts: shared straight from the user's address book.
     final contact = msg.contact;
     if (contact != null) {
-      await bot.sendMessage(
-        chatId,
-        'Contact: ${contact.firstName} — ${contact.phoneNumber}',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Contact: ${contact.firstName} — ${contact.phoneNumber}');
       continue;
     }
 
     if (update.text == '/start') {
-      await bot.sendMessage(
-        chatId,
-        'Try /whoami, send a caption on a photo, or share a photo, '
-        'location, document, or contact to see anyMessage in action.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /whoami, send a caption on a photo, or share a photo, '
+        'location, document, or contact to see anyMessage in action.',);
     }
   }
 }

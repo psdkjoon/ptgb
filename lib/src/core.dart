@@ -14,7 +14,7 @@ typedef Json = Map<String, dynamic>;
 ///
 /// ```dart
 /// try {
-///   await bot.sendMessage(chatId, 'hi');
+///   await bot.sendMessage(chatId: chatId, text: 'hi');
 /// } on TelegramApiException catch (e) {
 ///   if (e.errorCode == 429) {
 ///     final retryAfter = e.parameters?['retry_after'] as int?;

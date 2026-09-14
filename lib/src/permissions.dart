@@ -164,7 +164,9 @@ class ChatAdministratorRights {
 
   /// Reconstructs a [ChatAdministratorRights] from the raw JSON Telegram
   /// returns (e.g. from `Bot.getMyDefaultAdministratorRights`).
-  factory ChatAdministratorRights.fromJson(Json raw) => ChatAdministratorRights(
+  factory ChatAdministratorRights.fromJson({
+    required Json raw,
+  }) => ChatAdministratorRights(
         isAnonymous: raw['is_anonymous'] as bool? ?? false,
         canManageChat: raw['can_manage_chat'] as bool? ?? false,
         canDeleteMessages: raw['can_delete_messages'] as bool? ?? false,
@@ -207,12 +209,16 @@ abstract class ReactionType {
   /// Converts this reaction to the JSON shape Telegram's API expects.
   Json toJson();
 
-  /// A standard emoji reaction, e.g. `ReactionType.emoji('👍')`.
-  factory ReactionType.emoji(String emoji) => _EmojiReaction(emoji);
+  /// A standard emoji reaction, e.g. `ReactionType.emoji(emoji: '👍')`.
+  factory ReactionType.emoji({
+    required String emoji,
+  }) => _EmojiReaction(emoji: emoji);
 
   /// A reaction using a custom emoji sticker, identified by [customEmojiId].
-  factory ReactionType.customEmoji(String customEmojiId) =>
-      _CustomEmojiReaction(customEmojiId);
+  factory ReactionType.customEmoji({
+    required String customEmojiId,
+  }) =>
+      _CustomEmojiReaction(customEmojiId: customEmojiId);
 
   /// A paid-star reaction (Telegram Stars).
   factory ReactionType.paid() => _PaidReaction();
@@ -220,14 +226,18 @@ abstract class ReactionType {
 
 class _EmojiReaction implements ReactionType {
   final String emoji;
-  const _EmojiReaction(this.emoji);
+  const _EmojiReaction({
+    required this.emoji,
+  });
   @override
   Json toJson() => {'type': 'emoji', 'emoji': emoji};
 }
 
 class _CustomEmojiReaction implements ReactionType {
   final String customEmojiId;
-  const _CustomEmojiReaction(this.customEmojiId);
+  const _CustomEmojiReaction({
+    required this.customEmojiId,
+  });
   @override
   Json toJson() => {'type': 'custom_emoji', 'custom_emoji_id': customEmojiId};
 }

@@ -1,7 +1,8 @@
 /// `ptgb` — a full, pure-Dart Telegram Bot API client.
 ///
 /// Import this file to get everything you need: the [Bot] class plus every
-/// supporting type (keyboards, media, permissions, enums, updates, ...).
+/// supporting type (keyboards, media, permissions, enums, updates,
+/// built-in [BotStorage] persistence, ...).
 ///
 /// ```dart
 /// import 'package:ptgb/ptgb.dart';
@@ -12,11 +13,16 @@
 ///   final bot = Bot();
 ///   await for (final update in bot.poll()) {
 ///     if (update.text == '/start') {
-///       await bot.sendMessage(update.chatId!, 'Hello from ptgb!');
+///       await bot.sendMessage(chatId: update.chatId!, text: 'Hello from ptgb!');
 ///     }
 ///   }
 /// }
 /// ```
+///
+/// Want to remember your bot's users and chats between runs without
+/// setting up a database? See [BotStorage] — a built-in, file-backed
+/// store for users, chats, and any custom per-user/per-chat data you want
+/// to keep.
 ///
 /// See the `example/` folder in the package for a full set of runnable
 /// examples, from a minimal echo bot up to a "god mode" bot exercising
@@ -24,3 +30,4 @@
 library;
 
 export 'src/bot.dart';
+export 'src/storage.dart';

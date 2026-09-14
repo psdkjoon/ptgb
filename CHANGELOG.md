@@ -1,5 +1,53 @@
 # Changelog
 
+## 3.0.0
+
+### Changed — BREAKING
+- **Every method on `Bot`, and every constructor across the whole library
+  (keyboards, media, inline query results, message content, permissions,
+  stickers, checklists, business/story types), now takes named parameters
+  only.** Positional parameters are gone entirely — including required
+  ones. For example:
+  ```dart
+  // Before (2.x)
+  await bot.sendMessage(chatId, 'Hello!');
+  InlineKeyboardButton.callback('Yes', 'yes');
+
+  // After (3.0.0)
+  await bot.sendMessage(chatId: chatId, text: 'Hello!');
+  InlineKeyboardButton.callback(text: 'Yes', data: 'yes');
+  ```
+  This is a breaking change for every call site in existing code — update
+  each call to name its arguments. Internal JSON-wrapper types you don't
+  normally construct yourself (`User`, `Chat`, `Message`, `Update`, and
+  similar response types) are unaffected.
+- Every `///` doc comment across the library was reviewed for clarity, and
+  ones that lacked a usage example now have one, so the library is usable
+  by someone with no prior Telegram Bot API experience.
+- `penv`'s default `.env` template (used the first time `Bot()` can't find
+  a `.env` file) is now a beginner-friendly, ptgb-specific template that
+  explains exactly how to get a token from @BotFather, instead of a bare
+  placeholder. Customize it with the new `dotEnvTemplate` parameter on
+  `Bot()`.
+
+### Added
+- `BotStorage` (`lib/src/storage.dart`) — built-in, file-backed persistence
+  for a bot's users, chats, and any custom per-user/per-chat data, powered
+  by [`pdata`](https://pub.dev/packages/pdata). See `example/42_bot_storage.dart`
+  and the "Saving users and chats" section of the README.
+  - `saveUser`/`saveChat` — save or refresh a `User`/`Chat` record.
+  - `getUser`/`getChat` — read back a single stored record (`StoredUser`/`StoredChat`).
+  - `allUsers`/`allChats` — list every stored record.
+  - `removeUser`/`removeChat` — delete a stored record.
+  - `setUserData`/`getUserData` and `setChatData`/`getChatData` — attach
+    and read arbitrary custom data per user/chat.
+- `Bot()`'s `dotEnvTemplate` parameter, and `Bot.defaultDotEnvTemplate`, for
+  customizing the starter `.env` content ptgb writes the first time no
+  `.env` file exists.
+
+### Dependencies
+- Added `pdata: ^1.0.0`.
+
 ## 2.0.0
 
 ### Added

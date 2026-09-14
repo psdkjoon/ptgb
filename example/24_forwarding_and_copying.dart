@@ -37,22 +37,19 @@ Future<void> main() async {
     if (chatId == null || messageId == null) continue;
 
     // Forward: recipients see this came from the original chat/user.
-    await bot.forwardMessage(archiveChatId, chatId, messageId);
+    await bot.forwardMessage(chatId: archiveChatId, fromChatId: chatId, messageId: messageId);
 
     // Copy: recipients see this as an ordinary message from the bot, with
     // no reference to where it originally came from. `copyMessage` returns
     // just the new message's ID (as `MessageId`), not the full message.
-    await bot.copyMessage(archiveChatId, chatId, messageId);
+    await bot.copyMessage(chatId: archiveChatId, fromChatId: chatId, messageId: messageId);
 
-    await bot.sendMessage(
-      chatId,
-      'Archived your message both ways — check the archive chat.',
-    );
+    await bot.sendMessage(chatId: chatId, text: 'Archived your message both ways — check the archive chat.');
 
     // Batch versions accept a list of message IDs and relay them all in one
     // call, preserving their relative order — useful for archiving an
     // entire album (media group) at once instead of one call per item:
-    //   await bot.forwardMessages(archiveChatId, chatId, [101, 102, 103]);
-    //   await bot.copyMessages(archiveChatId, chatId, [101, 102, 103]);
+    //   await bot.forwardMessages(chatId: archiveChatId, fromChatId: chatId, messageIds: [101, 102, 103]);
+    //   await bot.copyMessages(chatId: archiveChatId, fromChatId: chatId, messageIds: [101, 102, 103]);
   }
 }

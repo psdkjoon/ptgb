@@ -23,7 +23,7 @@ Future<void> main() async {
   //    tracking for you, so this is all you need for a working bot.
   await for (final update in bot.poll()) {
     if (update.text == 'ping') {
-      await bot.sendMessage(update.chatId!, 'pong');
+      await bot.sendMessage(chatId: update.chatId!, text: 'pong');
     }
   }
 }

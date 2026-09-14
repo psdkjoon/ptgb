@@ -73,8 +73,8 @@ class ReplyParameters {
   final int? quotePosition;
 
   /// Creates reply parameters targeting [messageId].
-  const ReplyParameters(
-    this.messageId, {
+  const ReplyParameters({
+    required this.messageId,
     this.chatId,
     this.allowSendingWithoutReply,
     this.quote,

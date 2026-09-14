@@ -35,53 +35,25 @@ Future<void> main() async {
     if (text == '/prepare_share_card') {
       // The `result` here is the same as what you'd hand to
       // `answerInlineQuery` for a single result — see 08_inline_queries.dart.
-      final prepared = await bot.savePreparedInlineMessage(
-        userId,
-        InlineQueryResultArticle(
-          'share-card',
-          'Check out ptgb',
-          InputTextMessageContent(
-            'ptgb — a complete Dart client for the Telegram Bot API.',
-          ),
-        ),
-        allowUserChats: true,
-        allowGroupChats: true,
-      );
+      final prepared = await bot.savePreparedInlineMessage(userId: userId, result: InlineQueryResultArticle(id: 'share-card', title: 'Check out ptgb', inputMessageContent: InputTextMessageContent(messageText: 'ptgb — a complete Dart client for the Telegram Bot API.')), allowUserChats: true, allowGroupChats: true);
       final preparedId = prepared.id;
 
       // Give the user a button that shares this prepared result into any
       // chat they pick, without re-running your inline-query logic.
       await bot.sendMessage(
-        chatId,
-        'Tap to share:',
-        replyMarkup: InlineKeyboardMarkup.single([
-          InlineKeyboardButton(
-            text: 'Share',
-            switchInlineQueryChosenChat: SwitchInlineQueryChosenChat(
-              preparedInlineMessageId: preparedId,
-            ),
-          ),
-        ]),
+        chatId: chatId,
+        text: 'Tap to share:',
+        replyMarkup: InlineKeyboardMarkup.single(row: [
+          InlineKeyboardButton(text: 'Share', switchInlineQueryChosenChat: SwitchInlineQueryChosenChat(preparedInlineMessageId: preparedId)),
+        ],),
       );
     } else if (text == '/prepare_keyboard_button') {
       // Same idea, but for a reply-keyboard "share chat" style button
       // rather than an inline result.
-      final prepared = await bot.savePreparedKeyboardButton(
-        userId,
-        KeyboardButton(
-          'Send feedback',
-          requestUsers: KeyboardButtonRequestUsers(1),
-        ),
-      );
-      await bot.sendMessage(
-        chatId,
-        'Prepared keyboard button: ${prepared.id}',
-      );
+      final prepared = await bot.savePreparedKeyboardButton(userId: userId, button: KeyboardButton(text: 'Send feedback', requestUsers: KeyboardButtonRequestUsers(requestId: 1)));
+      await bot.sendMessage(chatId: chatId, text: 'Prepared keyboard button: ${prepared.id}');
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /prepare_share_card or /prepare_keyboard_button.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /prepare_share_card or /prepare_keyboard_button.');
     }
   }
 }

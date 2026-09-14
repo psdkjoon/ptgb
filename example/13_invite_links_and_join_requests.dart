@@ -54,11 +54,11 @@ Future<void> main() async {
       // A real bot might check an allowlist, a captcha answer, an account
       // age, etc. here before deciding. This demo just approves everyone
       // and logs it.
-      await bot.approveChatJoinRequest(chatId, userId);
+      await bot.approveChatJoinRequest(chatId: chatId, userId: userId);
       log('Approved join request from ${username ?? userId}');
 
       // To reject instead:
-      //   await bot.declineChatJoinRequest(chatId, userId);
+      //   await bot.declineChatJoinRequest(chatId: chatId, userId: userId);
       continue;
     }
 
@@ -69,16 +69,9 @@ Future<void> main() async {
     if (text == '/invite') {
       // Part 1: create a link that funnels joiners through your bot for
       // approval instead of adding them immediately.
-      final link = await bot.createChatInviteLink(
-        targetChatId,
-        name: 'Approved by bot',
-        createsJoinRequest: true,
-      );
-      await bot.sendMessage(
-        chatId,
-        'Share this link — anyone who uses it will need my approval to join:\n'
-        '${link.inviteLink}',
-      );
+      final link = await bot.createChatInviteLink(chatId: targetChatId, name: 'Approved by bot', createsJoinRequest: true);
+      await bot.sendMessage(chatId: chatId, text: 'Share this link — anyone who uses it will need my approval to join:\n'
+        '${link.inviteLink}',);
     }
   }
 }

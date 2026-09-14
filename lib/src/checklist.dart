@@ -19,9 +19,9 @@ class InputChecklistTask {
   final List<Json>? textEntities;
 
   /// Creates a checklist task with the given [id] and [text].
-  const InputChecklistTask(
-    this.id,
-    this.text, {
+  const InputChecklistTask({
+    required this.id,
+    required this.text,
     this.parseMode,
     this.textEntities,
   });
@@ -37,6 +37,23 @@ class InputChecklistTask {
 
 /// A checklist to create, used with [Bot.sendChecklist] and
 /// [Bot.editMessageChecklist] (both business-account-only).
+///
+/// ```dart
+/// final checklist = InputChecklist(
+///   title: 'Trip packing list',
+///   tasks: [
+///     InputChecklistTask(id: 1, text: 'Passport'),
+///     InputChecklistTask(id: 2, text: 'Charger'),
+///     InputChecklistTask(id: 3, text: 'Sunscreen'),
+///   ],
+/// );
+///
+/// await bot.sendChecklist(
+///   businessConnectionId: connectionId,
+///   chatId: update.chatId!,
+///   checklist: checklist,
+/// );
+/// ```
 class InputChecklist {
   /// Title of the checklist, 1-255 characters after entities parsing.
   final String title;
@@ -57,9 +74,9 @@ class InputChecklist {
   final bool? othersCanMarkTasksAsDone;
 
   /// Creates a checklist with the given [title] and [tasks].
-  const InputChecklist(
-    this.title,
-    this.tasks, {
+  const InputChecklist({
+    required this.title,
+    required this.tasks,
     this.parseMode,
     this.titleEntities,
     this.othersCanAddTasks,

@@ -46,7 +46,7 @@ Future<void> sendMessageReliably(
 }) async {
   for (var attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      await bot.sendMessage(chatId, text);
+      await bot.sendMessage(chatId: chatId, text: text);
       return;
     } on TelegramApiException catch (e) {
       if (e.errorCode == 429) {

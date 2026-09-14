@@ -39,55 +39,35 @@ Future<void> main() async {
     switch (text) {
       case '/react':
         // A single standard-emoji reaction.
-        await bot.setMessageReaction(
-          chatId,
-          messageId,
-          reaction: [ReactionType.emoji('🔥')],
-        );
+        await bot.setMessageReaction(chatId: chatId, messageId: messageId, reaction: [ReactionType.emoji(emoji: '🔥')]);
 
       case '/react_big':
         // `isBig: true` plays the large "burst" animation some emoji have.
-        await bot.setMessageReaction(
-          chatId,
-          messageId,
-          reaction: [ReactionType.emoji('🎉')],
-          isBig: true,
-        );
+        await bot.setMessageReaction(chatId: chatId, messageId: messageId, reaction: [ReactionType.emoji(emoji: '🎉')], isBig: true);
 
       case '/react_many':
         // Some chats (channels with the right permissions) allow more than
         // one reaction on the same message from the same "reactor".
-        await bot.setMessageReaction(
-          chatId,
-          messageId,
-          reaction: [ReactionType.emoji('👍'), ReactionType.emoji('❤')],
-        );
+        await bot.setMessageReaction(chatId: chatId, messageId: messageId, reaction: [ReactionType.emoji(emoji: '👍'), ReactionType.emoji(emoji: '❤')]);
 
       case '/react_paid':
         // A Telegram Stars reaction — visually distinct from emoji
         // reactions, and (unlike them) irreversible once sent.
-        await bot.setMessageReaction(
-          chatId,
-          messageId,
-          reaction: [ReactionType.paid()],
-        );
+        await bot.setMessageReaction(chatId: chatId, messageId: messageId, reaction: [ReactionType.paid()]);
 
       case '/unreact':
         // Passing an empty (or omitted) `reaction` list clears the bot's
         // own reaction from the message.
-        await bot.setMessageReaction(chatId, messageId, reaction: []);
+        await bot.setMessageReaction(chatId: chatId, messageId: messageId, reaction: []);
 
       case '/clear_all_reactions':
         // Requires the bot to be an admin with rights over the chat: wipes
         // *everyone's* reactions off the message, not just the bot's own.
-        await bot.deleteAllMessageReactions(chatId, messageId);
+        await bot.deleteAllMessageReactions(chatId: chatId, messageId: messageId);
 
       default:
-        await bot.sendMessage(
-          chatId,
-          'Try /react, /react_big, /react_many, /react_paid, /unreact, or /clear_all_reactions '
-          '(send as a reply to the message you want reacted to).',
-        );
+        await bot.sendMessage(chatId: chatId, text: 'Try /react, /react_big, /react_many, /react_paid, /unreact, or /clear_all_reactions '
+          '(send as a reply to the message you want reacted to).',);
     }
   }
 }

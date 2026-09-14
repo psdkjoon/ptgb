@@ -42,38 +42,26 @@ Future<void> main() async {
     }
 
     if (text == '/setup_business_profile') {
-      await bot.setBusinessAccountName(
-        businessConnectionId,
-        'Acme Support',
-        lastName: 'Desk',
-      );
-      await bot.setBusinessAccountUsername(
-        businessConnectionId,
-        username: 'acme_support',
-      );
-      await bot.setBusinessAccountBio(
-        businessConnectionId,
-        bio: 'Official support account — replies within 24h.',
-      );
+      await bot.setBusinessAccountName(businessConnectionId: businessConnectionId, firstName: 'Acme Support', lastName: 'Desk');
+      await bot.setBusinessAccountUsername(businessConnectionId: businessConnectionId, username: 'acme_support');
+      await bot.setBusinessAccountBio(businessConnectionId: businessConnectionId, bio: 'Official support account — replies within 24h.');
       await bot.setBusinessAccountProfilePhoto(
-        businessConnectionId,
-        InputProfilePhotoStatic(InputFile.path('example/assets/logo.png')),
+        businessConnectionId: businessConnectionId,
+        photo: InputProfilePhotoStatic(
+          photo: InputFile.path(path: 'example/assets/logo.png'),
+        ),
       );
     } else if (text == '/remove_business_photo') {
-      await bot.removeBusinessAccountProfilePhoto(businessConnectionId);
+      await bot.removeBusinessAccountProfilePhoto(businessConnectionId: businessConnectionId);
     } else if (text == '/gift_settings') {
       // Accept ordinary and limited gifts, but decline unique (one-of-a-kind)
       // gifts and gifted Premium subscriptions.
-      await bot.setBusinessAccountGiftSettings(
-        businessConnectionId,
-        true,
-        const AcceptedGiftTypes(
+      await bot.setBusinessAccountGiftSettings(businessConnectionId: businessConnectionId, showGiftButton: true, acceptedGiftTypes: const AcceptedGiftTypes(
           unlimitedGifts: true,
           limitedGifts: true,
           uniqueGifts: false,
           premiumSubscription: false,
-        ),
-      );
+        ),);
     }
   }
 }

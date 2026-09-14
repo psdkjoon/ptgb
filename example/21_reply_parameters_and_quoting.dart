@@ -36,9 +36,9 @@ Future<void> main() async {
       // older `replyToMessageId` parameter, but `ReplyParameters` is the
       // one to reach for when you also want quoting or cross-chat replies.
       await bot.sendMessage(
-        chatId,
-        'This is a reply to your message.',
-        replyParameters: ReplyParameters(messageId),
+        chatId: chatId,
+        text: 'This is a reply to your message.',
+        replyParameters: ReplyParameters(messageId: messageId),
       );
     } else if (text.startsWith('/quote ')) {
       // Quote a specific substring of the message being replied to. This
@@ -47,10 +47,10 @@ Future<void> main() async {
       // text back for demonstration purposes.
       final excerpt = text.substring('/quote '.length);
       await bot.sendMessage(
-        chatId,
-        'You asked me to quote: "$excerpt"',
+        chatId: chatId,
+        text: 'You asked me to quote: "$excerpt"',
         replyParameters: ReplyParameters(
-          messageId,
+          messageId: messageId,
           quote: excerpt,
           // If the excerpt appears more than once in the original message,
           // `quotePosition` (a character offset) disambiguates which
@@ -64,16 +64,13 @@ Future<void> main() async {
       // reply asynchronously (e.g. after a slow API call) where the
       // original message might not survive that long.
       await bot.sendMessage(
-        chatId,
-        'Replying safely — this sends even if the original message is gone.',
+        chatId: chatId,
+        text: 'Replying safely — this sends even if the original message is gone.',
         replyParameters:
-            ReplyParameters(messageId, allowSendingWithoutReply: true),
+            ReplyParameters(messageId: messageId, allowSendingWithoutReply: true),
       );
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /reply, /quote <text>, or /safe_reply.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /reply, /quote <text>, or /safe_reply.');
     }
   }
 }

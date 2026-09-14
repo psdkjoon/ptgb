@@ -31,40 +31,28 @@ Future<void> main() async {
     if (chatId == null || text == null || userId == null) continue;
 
     if (text == '/my_boosts') {
-      final boosts = await bot.getUserChatBoosts(chatId, userId);
+      final boosts = await bot.getUserChatBoosts(chatId: chatId, userId: userId);
       final count = boosts.boosts.length;
-      await bot.sendMessage(
-        chatId,
-        count == 0
+      await bot.sendMessage(chatId: chatId, text: count == 0
             ? 'You haven\'t boosted this chat.'
-            : 'You\'ve applied $count boost(s) to this chat — thank you!',
-      );
+            : 'You\'ve applied $count boost(s) to this chat — thank you!',);
     } else if (text == '/verify_me') {
       // Only works for bots with Telegram-granted verification approval.
       try {
-        await bot.verifyUser(
-          userId,
-          customDescription: 'Verified community member',
-        );
-        await bot.sendMessage(chatId, 'You now have a verification badge.');
+        await bot.verifyUser(userId: userId, customDescription: 'Verified community member');
+        await bot.sendMessage(chatId: chatId, text: 'You now have a verification badge.');
       } on TelegramApiException catch (e) {
-        await bot.sendMessage(chatId, 'Could not verify: ${e.description}');
+        await bot.sendMessage(chatId: chatId, text: 'Could not verify: ${e.description}');
       }
     } else if (text == '/unverify_me') {
       try {
-        await bot.removeUserVerification(userId);
-        await bot.sendMessage(chatId, 'Verification badge removed.');
+        await bot.removeUserVerification(userId: userId);
+        await bot.sendMessage(chatId: chatId, text: 'Verification badge removed.');
       } on TelegramApiException catch (e) {
-        await bot.sendMessage(
-          chatId,
-          'Could not remove verification: ${e.description}',
-        );
+        await bot.sendMessage(chatId: chatId, text: 'Could not remove verification: ${e.description}');
       }
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /my_boosts, /verify_me, or /unverify_me.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /my_boosts, /verify_me, or /unverify_me.');
     }
   }
 }

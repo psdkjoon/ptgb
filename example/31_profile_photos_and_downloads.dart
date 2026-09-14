@@ -32,10 +32,10 @@ Future<void> main() async {
     if (chatId == null || text == null || userId == null) continue;
 
     if (text == '/my_photo') {
-      final photos = await bot.getUserProfilePhotos(userId, limit: 1);
+      final photos = await bot.getUserProfilePhotos(userId: userId, limit: 1);
       final total = photos.totalCount;
       if (total == 0) {
-        await bot.sendMessage(chatId, 'You don\'t have a profile photo set.');
+        await bot.sendMessage(chatId: chatId, text: 'You don\'t have a profile photo set.');
         continue;
       }
 
@@ -47,25 +47,24 @@ Future<void> main() async {
 
       // `downloadFileById` combines `getFile` (resolving the file path)
       // and `downloadFile` (fetching the bytes) into one call.
-      final bytes = await bot.downloadFileById(fileId);
+      final bytes = await bot.downloadFileById(fileId: fileId);
       await bot.sendPhoto(
-        chatId,
-        InputFile.bytes(bytes, filename: 'profile.jpg'),
+        chatId: chatId,
+        photo: InputFile.bytes(bytes: bytes, filename: 'profile.jpg'),
       );
     } else if (text == '/set_my_photo') {
       // Sets the *bot's own* avatar from a local file.
       await bot.setMyProfilePhoto(
-        InputProfilePhotoStatic(InputFile.path('example/assets/logo.png')),
+        photo: InputProfilePhotoStatic(
+          photo: InputFile.path(path: 'example/assets/logo.png'),
+        ),
       );
-      await bot.sendMessage(chatId, 'Updated my profile photo.');
+      await bot.sendMessage(chatId: chatId, text: 'Updated my profile photo.');
     } else if (text == '/remove_my_photo') {
       await bot.removeMyProfilePhoto();
-      await bot.sendMessage(chatId, 'Removed my profile photo.');
+      await bot.sendMessage(chatId: chatId, text: 'Removed my profile photo.');
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /my_photo, /set_my_photo, or /remove_my_photo.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /my_photo, /set_my_photo, or /remove_my_photo.');
     }
   }
 }

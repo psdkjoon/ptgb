@@ -38,20 +38,14 @@ Future<void> main() async {
         description: 'A demo bot showing off ptgb profile-management methods.',
       );
       await bot.setMyShortDescription(shortDescription: 'ptgb profile demo');
-      await bot.sendMessage(
-        chatId,
-        'Profile updated — check my chat header and start screen.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Profile updated — check my chat header and start screen.');
     } else if (text == '/read_profile') {
       final name = await bot.getMyName();
       final description = await bot.getMyDescription();
       final shortDescription = await bot.getMyShortDescription();
-      await bot.sendMessage(
-        chatId,
-        'Name: ${name.name}\n'
+      await bot.sendMessage(chatId: chatId, text: 'Name: ${name.name}\n'
         'Description: ${description.description}\n'
-        'Short description: ${shortDescription.shortDescription}',
-      );
+        'Short description: ${shortDescription.shortDescription}',);
     } else if (text == '/web_app_menu') {
       // Replaces the default "Menu" button (which normally opens the
       // commands list) with one that launches a Web App directly.
@@ -63,17 +57,14 @@ Future<void> main() async {
           'web_app': {'url': 'https://your-mini-app.example.com'},
         },
       );
-      await bot.sendMessage(chatId, 'Menu button now opens the Web App.');
+      await bot.sendMessage(chatId: chatId, text: 'Menu button now opens the Web App.');
     } else if (text == '/reset_menu') {
       // `{'type': 'default'}` restores the standard commands-menu button.
       await bot
           .setChatMenuButton(chatId: chatId, menuButton: {'type': 'default'});
-      await bot.sendMessage(chatId, 'Menu button reset to default.');
+      await bot.sendMessage(chatId: chatId, text: 'Menu button reset to default.');
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /setup_profile, /read_profile, /web_app_menu, or /reset_menu.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /setup_profile, /read_profile, /web_app_menu, or /reset_menu.');
     }
   }
 }

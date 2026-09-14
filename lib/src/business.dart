@@ -15,7 +15,9 @@ class InputProfilePhotoStatic implements InputProfilePhoto {
   final InputFile photo;
 
   /// Creates a static profile photo from [photo].
-  const InputProfilePhotoStatic(this.photo);
+  const InputProfilePhotoStatic({
+    required this.photo,
+  });
 
   @override
   Json toJson(Map<String, InputFile> files) {
@@ -39,7 +41,10 @@ class InputProfilePhotoAnimated implements InputProfilePhoto {
   final double? mainFrameTimestamp;
 
   /// Creates an animated profile photo from [animation].
-  const InputProfilePhotoAnimated(this.animation, {this.mainFrameTimestamp});
+  const InputProfilePhotoAnimated({
+    required this.animation,
+    this.mainFrameTimestamp,
+  });
 
   @override
   Json toJson(Map<String, InputFile> files) {
@@ -72,7 +77,9 @@ class InputStoryContentPhoto implements InputStoryContent {
   final InputFile photo;
 
   /// Creates a photo story from [photo].
-  const InputStoryContentPhoto(this.photo);
+  const InputStoryContentPhoto({
+    required this.photo,
+  });
 
   @override
   Json toJson(Map<String, InputFile> files) {
@@ -102,8 +109,8 @@ class InputStoryContentVideo implements InputStoryContent {
   final bool? isAnimation;
 
   /// Creates a video story from [video].
-  const InputStoryContentVideo(
-    this.video, {
+  const InputStoryContentVideo({
+    required this.video,
     this.duration,
     this.coverFrameTimestamp,
     this.isAnimation,

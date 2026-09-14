@@ -38,50 +38,33 @@ Future<void> main() async {
       // Sets the *default* permissions for every non-admin member of the
       // chat — e.g. a "slow mode"-style lockdown where only plain text is
       // allowed and nobody can invite new users.
-      await bot.setChatPermissions(
-        chatId,
-        const ChatPermissions(
+      await bot.setChatPermissions(chatId: chatId, permissions: const ChatPermissions(
           canSendMessages: true,
           canSendPhotos: false,
           canSendVideos: false,
           canSendOtherMessages: false,
           canInviteUsers: false,
           canPinMessages: false,
-        ),
-      );
-      await bot.sendMessage(chatId, 'Lockdown mode: text only, no invites.');
+        ),);
+      await bot.sendMessage(chatId: chatId, text: 'Lockdown mode: text only, no invites.');
     } else if (text == '/restrict_me') {
       // Restricting an *individual* member overrides the chat's defaults
       // for just that person, optionally until a given Unix timestamp.
-      await bot.restrictChatMember(
-        chatId,
-        userId,
-        const ChatPermissions(canSendMessages: false),
-        untilDate: DateTime.now()
+      await bot.restrictChatMember(chatId: chatId, userId: userId, permissions: const ChatPermissions(canSendMessages: false), untilDate: DateTime.now()
                 .add(const Duration(minutes: 10))
                 .millisecondsSinceEpoch ~/
-            1000,
-      );
-      await bot.sendMessage(chatId, 'Muted for 10 minutes.');
+            1000,);
+      await bot.sendMessage(chatId: chatId, text: 'Muted for 10 minutes.');
     } else if (text == '/make_moderator') {
       // Grants a specific subset of admin privileges — this member can
       // delete messages and restrict others, but can't touch chat settings
       // or promote further admins.
-      await bot.promoteChatMember(
-        chatId,
-        userId,
-        canDeleteMessages: true,
-        canRestrictMembers: true,
-        canPinMessages: true,
-      );
+      await bot.promoteChatMember(chatId: chatId, userId: userId, canDeleteMessages: true, canRestrictMembers: true, canPinMessages: true);
       // A custom title shown next to their name instead of the default "Admin".
-      await bot.setChatAdministratorCustomTitle(chatId, userId, 'Moderator');
-      await bot.sendMessage(chatId, 'You are now a Moderator.');
+      await bot.setChatAdministratorCustomTitle(chatId: chatId, userId: userId, customTitle: 'Moderator');
+      await bot.sendMessage(chatId: chatId, text: 'You are now a Moderator.');
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /lockdown, /restrict_me, or /make_moderator.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /lockdown, /restrict_me, or /make_moderator.');
     }
   }
 }

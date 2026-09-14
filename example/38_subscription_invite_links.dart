@@ -34,37 +34,22 @@ Future<void> main() async {
     if (text == '/create_subscription_link') {
       // `subscriptionPeriod` is fixed at 2592000 seconds (30 days) as of
       // this writing; `subscriptionPrice` is in Telegram Stars per period.
-      final link = await bot.createChatSubscriptionInviteLink(
-        chatId,
-        2592000,
-        250,
-        name: 'Monthly membership',
-      );
-      await bot.sendMessage(
-        chatId,
-        'Subscription link: ${link.inviteLink}',
-      );
+      final link = await bot.createChatSubscriptionInviteLink(chatId: chatId, subscriptionPeriod: 2592000, subscriptionPrice: 250, name: 'Monthly membership');
+      await bot.sendMessage(chatId: chatId, text: 'Subscription link: ${link.inviteLink}');
     } else if (text.startsWith('/rename_link ')) {
       final inviteLink = text.substring('/rename_link '.length).trim();
-      await bot.editChatSubscriptionInviteLink(
-        chatId,
-        inviteLink,
-        name: 'VIP membership',
-      );
-      await bot.sendMessage(chatId, 'Renamed.');
+      await bot.editChatSubscriptionInviteLink(chatId: chatId, inviteLink: inviteLink, name: 'VIP membership');
+      await bot.sendMessage(chatId: chatId, text: 'Renamed.');
     } else if (text.startsWith('/cancel_subscription ')) {
       final parts =
           text.substring('/cancel_subscription '.length).trim().split(' ');
       final userId = int.parse(parts[0]);
       final chargeId = parts[1];
-      await bot.editUserStarSubscription(userId, chargeId, true);
-      await bot.sendMessage(chatId, 'Subscription canceled for user $userId.');
+      await bot.editUserStarSubscription(userId: userId, telegramPaymentChargeId: chargeId, isCanceled: true);
+      await bot.sendMessage(chatId: chatId, text: 'Subscription canceled for user $userId.');
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /create_subscription_link, /rename_link <link>, or '
-        '/cancel_subscription <user_id> <charge_id>.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /create_subscription_link, /rename_link <link>, or '
+        '/cancel_subscription <user_id> <charge_id>.',);
     }
   }
 }

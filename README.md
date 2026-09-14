@@ -15,7 +15,7 @@ Future<void> main() async {
   final bot = Bot(); // loads your token from a .env file — see Quick Start
   await for (final update in bot.poll()) {
     if (update.text == '/start') {
-      await bot.sendMessage(update.chatId!, 'Hello from ptgb!');
+      await bot.sendMessage(chatId: update.chatId!, text: 'Hello from ptgb!');
     }
   }
 }
@@ -27,6 +27,7 @@ Future<void> main() async {
 - [Installation](#installation)
 - [Getting a bot token](#getting-a-bot-token)
 - [Quick start](#quick-start)
+- [Saving users and chats](#saving-users-and-chats)
 - [Examples](#examples)
 - [Things to keep in mind](#things-to-keep-in-mind)
 - [Contributing](#contributing)
@@ -37,6 +38,10 @@ Future<void> main() async {
 - **Full API coverage** — messaging, media, chat & forum administration,
   inline mode, payments & Telegram Stars, stickers, games, Telegram Business
   accounts, Stories, and Web Apps.
+- **Every parameter is named.** `bot.sendMessage(chatId: id, text: 'hi')`,
+  never `bot.sendMessage(id, 'hi')` — so calls are self-explanatory and safe
+  to reorder, and it's the same style everywhere in the library, down to
+  every keyboard button and media constructor.
 - **Two update sources** — long-polling out of the box (`Bot.poll`) or your
   own webhook server (`Bot.serveWebhook`).
 - **Typed helpers, not raw JSON, everywhere** — keyboards
@@ -46,6 +51,11 @@ Future<void> main() async {
   `Update`/`Message` payload and outgoing method's response
   (`User`/`Chat`/`Message`, `ChatFullInfo`, `StickerSet`, ...) — no more
   `something['somethingelse']`.
+- **Built-in user & chat storage.** `BotStorage` (powered by
+  [`pdata`](https://pub.dev/packages/pdata)) remembers every user and chat
+  your bot has seen, plus any custom data you attach to them, in a plain
+  JSON/YAML/TOML file — no database required. See
+  [Saving users and chats](#saving-users-and-chats).
 - **Optional rate limiting** — pass `Bot(rateLimiter: RateLimiter())` to
   automatically pace outgoing requests instead of handling every 429 yourself.
 - **Telegram Mini App support** — verify a Web App's signed `initData` with
@@ -63,7 +73,7 @@ or add it to `pubspec.yaml` directly:
 
 ```yaml
 dependencies:
-  ptgb: ^1.0.0
+  ptgb: ^3.0.0
 ```
 
 ## Getting a bot token
@@ -75,29 +85,45 @@ dependencies:
 
 ## Quick start
 
-**Recommended:** put your token in a `.env` file next to your script and let
-`ptgb` load it for you automatically (via the [`penv`](https://pub.dev/packages/penv)
-package):
-
-```
-TOKEN=123456:ABC-your-token-here
-```
+**Recommended:** just run your bot with `Bot()` and no arguments. The very
+first time, since there's no `.env` file yet, `ptgb` creates one for you at
+`.env` with step-by-step instructions on where to get a token, and throws an
+`EnvFileNotFoundException` so you know to open the file, paste your token in,
+and run again:
 
 ```dart
 import 'package:ptgb/ptgb.dart';
 
 Future<void> main() async {
-  final bot = Bot(); // reads TOKEN from .env
+  final bot = Bot(); // reads TOKEN from .env, creating a starter file for you
 
   await for (final update in bot.poll()) {
     if (update.text == '/start') {
-      await bot.sendMessage(update.chatId!, 'Hello from ptgb!');
+      await bot.sendMessage(chatId: update.chatId!, text: 'Hello from ptgb!');
     }
   }
 }
 ```
 
-Using a different filename or key? Pass `dotFileName` and/or `envKey`:
+The generated `.env` looks like this — fill in the blank after `TOKEN=`:
+
+```env
+# This file holds your bot's secret token. Never share it or commit this
+# file to git (add ".env" to your .gitignore).
+#
+# How to get a token:
+#   1. Open Telegram and start a chat with @BotFather.
+#   2. Send /newbot and follow the prompts (or /token to reuse an
+#      existing bot).
+#   3. Copy the token BotFather gives you and paste it below, after the
+#      "=" sign, with no spaces and no quotes.
+#
+# TOKEN=123456789:AAExampleTokenTextGoesRightHere
+TOKEN=
+```
+
+Using a different filename, key, or starter template? Pass `dotFileName`,
+`envKey`, and/or `dotEnvTemplate`:
 
 ```dart
 final bot = Bot(dotFileName: 'secrets.env', envKey: 'BOT_TOKEN');
@@ -115,6 +141,40 @@ final bot = Bot(token: myTokenFromSomewhereElse);
 Either way works — just never hard-code a real token as a literal string in
 code that ends up in version control.
 
+## Saving users and chats
+
+Most bots eventually need to know who has talked to them before — for a
+`/users` admin command, a per-user setting, or just to avoid re-onboarding
+someone. `BotStorage` does this for you, backed by a plain file on disk (no
+database setup):
+
+```dart
+import 'package:ptgb/ptgb.dart';
+
+Future<void> main() async {
+  final bot = Bot();
+  final storage = BotStorage(path: 'bot_data.json');
+  await storage.load();
+
+  await for (final update in bot.poll()) {
+    if (update.from != null) await storage.saveUser(user: update.from!);
+
+    if (update.text == '/users') {
+      await bot.sendMessage(
+        chatId: update.chatId!,
+        text: 'I know ${storage.allUsers().length} user(s) so far!',
+      );
+    }
+  }
+}
+```
+
+You can also attach your own data to a saved user or chat — a language
+preference, an onboarding step, anything — with `setUserData`/`setChatData`
+and read it back with `getUserData`/`getChatData`. See the `BotStorage` class
+docs and `example/` for the full API (`getUser`, `getChat`, `allChats`,
+`removeUser`, `removeChat`, ...).
+
 ## Examples
 
 The [`example/`](example/) folder has a full, numbered set of runnable
@@ -124,6 +184,11 @@ keyboards, media, payments, stickers, invite links, and webhooks. Start with
 
 ## Things to keep in mind
 
+- **Every parameter is named.** All `Bot` methods and every constructor in
+  the library (keyboards, media, inline query results, etc.) take named
+  parameters only — `bot.sendPhoto(chatId: id, photo: file)`, not
+  `bot.sendPhoto(id, file)`. This makes call sites self-documenting and
+  keeps them working if a method ever gains new parameters in the middle.
 - **Treat your token like a password.** Anyone who has it can control your
   bot. Keep it out of version control.
 - **`poll()` and `serveWebhook()` are mutually exclusive.** Telegram only
@@ -149,6 +214,9 @@ keyboards, media, payments, stickers, invite links, and webhooks. Start with
   `example/18_typed_message_helpers.dart`. These are common class names, so
   if another package you're using also exports a `User`, `Chat`, or
   `Message`, import one of them with a prefix to disambiguate.
+- **Want to remember your bot's users/chats between runs?** See
+  [Saving users and chats](#saving-users-and-chats) — `BotStorage` handles
+  it without a database.
 - Requires Dart SDK `^3.5.0`.
 
 ## Documentation

@@ -39,41 +39,27 @@ Future<void> main() async {
       final lines = catalog.gifts.take(5).map((gift) {
         return '${gift.sticker.emoji ?? '🎁'} — ${gift.starCount} Stars';
       });
-      await bot.sendMessage(
-        chatId,
-        'A few available gifts:\n${lines.join('\n')}',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'A few available gifts:\n${lines.join('\n')}');
     } else if (text.startsWith('/gift ')) {
       final giftId = text.substring('/gift '.length).trim();
       await bot.sendGift(
-        giftId,
+        giftId: giftId,
         userId: userId,
         text: 'Thanks for trying ptgb!',
       );
-      await bot.sendMessage(chatId, 'Gift sent!');
+      await bot.sendMessage(chatId: chatId, text: 'Gift sent!');
     } else if (text == '/gift_premium') {
       // Gifts 1 month of Telegram Premium for 1000 Stars (adjust to a real
       // current price before using this for real).
-      await bot.giftPremiumSubscription(
-        userId,
-        1,
-        1000,
-        text: 'Enjoy Premium!',
-      );
+      await bot.giftPremiumSubscription(userId: userId, monthCount: 1, starCount: 1000, text: 'Enjoy Premium!');
     } else if (text == '/my_gifts') {
-      final owned = await bot.getUserGifts(userId, limit: 5);
+      final owned = await bot.getUserGifts(userId: userId, limit: 5);
       final gifts = owned.gifts;
-      await bot.sendMessage(
-        chatId,
-        gifts.isEmpty
+      await bot.sendMessage(chatId: chatId, text: gifts.isEmpty
             ? 'No gifts received yet.'
-            : 'You have ${gifts.length} gift(s).',
-      );
+            : 'You have ${gifts.length} gift(s).',);
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /catalog, /gift <gift_id>, /gift_premium, or /my_gifts.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /catalog, /gift <gift_id>, /gift_premium, or /my_gifts.');
     }
   }
 }

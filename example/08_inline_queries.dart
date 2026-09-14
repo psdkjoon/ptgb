@@ -35,35 +35,14 @@ Future<void> main() async {
     // one result type. Each result needs a unique `id` within this answer.
     final results = <InlineQueryResult>[
       // A plain text article — the most common result type.
-      InlineQueryResultArticle(
-        '1',
-        'Echo: $searchText',
-        InputTextMessageContent('You searched for: $searchText'),
-        description: 'Sends the query text back as a message',
-      ),
-      InlineQueryResultArticle(
-        '2',
-        'Shout it',
-        InputTextMessageContent('${searchText.toUpperCase()}!!!'),
-        description: 'Sends the query text, but louder',
-      ),
+      InlineQueryResultArticle(id: '1', title: 'Echo: $searchText', inputMessageContent: InputTextMessageContent(messageText: 'You searched for: $searchText'), description: 'Sends the query text back as a message'),
+      InlineQueryResultArticle(id: '2', title: 'Shout it', inputMessageContent: InputTextMessageContent(messageText: '${searchText.toUpperCase()}!!!'), description: 'Sends the query text, but louder'),
       // A photo result fetched by URL, with its own caption.
-      InlineQueryResultPhoto(
-        '3',
-        'https://picsum.photos/seed/$searchText/600',
-        'https://picsum.photos/seed/$searchText/100',
-        title: 'A random photo',
-        caption: 'Seeded from: $searchText',
-      ),
+      InlineQueryResultPhoto(id: '3', photoUrl: 'https://picsum.photos/seed/$searchText/600', thumbnailUrl: 'https://picsum.photos/seed/$searchText/100', title: 'A random photo', caption: 'Seeded from: $searchText'),
       // A location result — tapping it sends a static point on the map.
-      InlineQueryResultLocation(
-        '4',
-        51.5074,
-        -0.1278,
-        'London (just an example location)',
-      ),
+      InlineQueryResultLocation(id: '4', latitude: 51.5074, longitude: -0.1278, title: 'London (just an example location)'),
     ];
 
-    await bot.answerInlineQuery(query.id, results, cacheTime: 0);
+    await bot.answerInlineQuery(inlineQueryId: query.id, results: results, cacheTime: 0);
   }
 }

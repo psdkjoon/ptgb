@@ -42,7 +42,7 @@ Future<void> main() async {
     final initData = await utf8.decoder.bind(request).join();
 
     // This does the actual HMAC-SHA256 verification against your bot token.
-    final parsed = bot.verifyWebAppInitData(initData);
+    final parsed = bot.verifyWebAppInitData(initData: initData);
 
     if (!parsed.isValid) {
       // Never trust unverified data — reject it outright.

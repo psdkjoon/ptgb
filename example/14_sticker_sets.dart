@@ -42,44 +42,43 @@ Future<void> main() async {
   const setName = 'my_demo_set_by_your_bot';
 
   // Step 1: upload the raw image and get back a reusable file_id.
-  final uploaded = await bot.uploadStickerFile(
-    ownerUserId,
-    InputFile.path(stickerImagePath),
-    StickerFormat.static,
-  );
+  final uploaded = await bot.uploadStickerFile(userId: ownerUserId, sticker: InputFile.path(path: stickerImagePath), stickerFormat: StickerFormat.static);
   final fileId = uploaded.fileId;
   log('Uploaded sticker file: $fileId');
 
   // Step 2: create the set using that file_id. Every sticker needs at least
   // one emoji describing it, used when people search for stickers.
-  await bot.createNewStickerSet(
-    ownerUserId,
-    setName,
-    'My Demo Sticker Set',
-    [
-      InputSticker(InputFile.id(fileId), StickerFormat.static, ['😀']),
-    ],
-  );
+  await bot.createNewStickerSet(userId: ownerUserId, name: setName, title: 'My Demo Sticker Set', stickers: [
+      InputSticker(
+        sticker: InputFile.id(fileId: fileId),
+        format: StickerFormat.static,
+        emojiList: ['😀'],
+      ),
+    ],);
   log('Created sticker set: $setName');
 
   // Step 3: adding a second sticker to the same set later just needs the
   // set name — no need to recreate it. Reusing the same uploaded file here
   // for simplicity; in practice you'd upload a different image.
   await bot.addStickerToSet(
-    ownerUserId,
-    setName,
-    InputSticker(InputFile.id(fileId), StickerFormat.static, ['😎']),
+    userId: ownerUserId,
+    name: setName,
+    sticker: InputSticker(
+      sticker: InputFile.id(fileId: fileId),
+      format: StickerFormat.static,
+      emojiList: ['😎'],
+    ),
   );
   log('Added a second sticker to the set.');
 
   // The set can now be sent like any other sticker set. `getStickerSet`
   // returns its stickers (each with its own file_id) if you need them.
-  final set = await bot.getStickerSet(setName);
+  final set = await bot.getStickerSet(name: setName);
   final firstStickerFileId = set.stickers.first.fileId;
 
   await for (final update in bot.poll()) {
     final chatId = update.chatId;
     if (chatId == null || update.text != '/sticker') continue;
-    await bot.sendSticker(chatId, InputFile.id(firstStickerFileId));
+    await bot.sendSticker(chatId: chatId, sticker: InputFile.id(fileId: firstStickerFileId));
   }
 }

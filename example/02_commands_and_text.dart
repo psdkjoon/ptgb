@@ -29,11 +29,11 @@ Future<void> main() async {
 
   // Registering commands makes Telegram show a "/" menu with descriptions,
   // instead of the user having to guess what commands exist.
-  await bot.setMyCommands([
+  await bot.setMyCommands(commands: [
     {'command': 'start', 'description': 'Say hello'},
     {'command': 'help', 'description': 'List available commands'},
     {'command': 'time', 'description': 'Show the current server time'},
-  ]);
+  ],);
 
   await for (final update in bot.poll()) {
     final text = update.text;
@@ -44,24 +44,17 @@ Future<void> main() async {
     // treated as plain conversation.
     switch (text.split(' ').first) {
       case '/start':
-        await bot.sendMessage(
-          chatId,
-          'Hi! I understand /start, /help, and /time.',
-        );
+        await bot.sendMessage(chatId: chatId, text: 'Hi! I understand /start, /help, and /time.');
       case '/help':
-        await bot.sendMessage(
-          chatId,
-          '*Available commands:*\n'
+        await bot.sendMessage(chatId: chatId, text: '*Available commands:*\n'
           '/start — say hello\n'
           '/help — show this message\n'
-          '/time — show the current time',
-          parseMode: ParseMode.markdown,
-        );
+          '/time — show the current time', parseMode: ParseMode.markdown,);
       case '/time':
-        await bot.sendMessage(chatId, 'Server time: ${DateTime.now()}');
+        await bot.sendMessage(chatId: chatId, text: 'Server time: ${DateTime.now()}');
       default:
         // Anything that isn't a known command is just echoed back.
-        await bot.sendMessage(chatId, 'Unknown command. Try /help.');
+        await bot.sendMessage(chatId: chatId, text: 'Unknown command. Try /help.');
     }
   }
 }

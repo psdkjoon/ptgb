@@ -35,12 +35,12 @@ Future<void> main() async {
 
   // Start listening for incoming webhook POST requests on port 8443.
   final server = await bot.serveWebhook(
-    (update) async {
+    onUpdate: (update) async {
       // This callback fires for every update, same shape as `poll()`'s stream.
       final text = update.text;
       final chatId = update.chatId;
       if (text != null && chatId != null) {
-        await bot.sendMessage(chatId, 'Received via webhook: $text');
+        await bot.sendMessage(chatId: chatId, text: 'Received via webhook: $text');
       }
     },
     path: '/telegram-webhook',
@@ -52,7 +52,7 @@ Future<void> main() async {
 
   // Tell Telegram where to send updates. Only needs to run once — Telegram
   // remembers the URL until you call `deleteWebhook` or change it again.
-  await bot.setWebhook(webhookUrl, secretToken: secretToken);
+  await bot.setWebhook(url: webhookUrl, secretToken: secretToken);
   log('Webhook registered at $webhookUrl');
 
   // NOTE: if you were previously using `poll()` for this same bot, make

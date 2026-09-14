@@ -974,11 +974,11 @@ class GameHighScore {
   String toString() => 'GameHighScore(#$position ${user.fullName}: $score)';
 }
 
-// ---------------------------------------------------------------------------
-// Bot method response types
-// ---------------------------------------------------------------------------
-
 /// The current webhook status, as returned by `Bot.getWebhookInfo`.
+///
+/// This and the classes below it wrap the shape of a `Bot` method's
+/// *return value*, rather than an incoming update. If you're looking for
+/// `Message`, `User`, or `Chat`, they're defined earlier in this file.
 class WebhookInfo {
   /// The raw JSON this wrapper reads from.
   final Json raw;

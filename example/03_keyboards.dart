@@ -32,13 +32,10 @@ Future<void> main() async {
 
       // You should ALWAYS answer callback queries, even with no arguments —
       // otherwise Telegram keeps showing a loading spinner on the button.
-      await bot.answerCallbackQuery(
-        callback.id,
-        text: 'You picked: $data', // shown as a small popup toast
-      );
+      await bot.answerCallbackQuery(callbackQueryId: callback.id, text: 'You picked: $data' /* shown as a small popup toast */);
 
       if (chatId != null) {
-        await bot.sendMessage(chatId, 'Inline button pressed: $data');
+        await bot.sendMessage(chatId: chatId, text: 'Inline button pressed: $data');
       }
       continue;
     }
@@ -49,49 +46,31 @@ Future<void> main() async {
 
     if (text == '/inline') {
       // An inline keyboard: 2 buttons on the first row, 1 on the second.
-      await bot.sendMessage(
-        chatId,
-        'Pick a color:',
-        replyMarkup: InlineKeyboardMarkup([
+      await bot.sendMessage(chatId: chatId, text: 'Pick a color:', replyMarkup: InlineKeyboardMarkup(rows: [
           [
-            InlineKeyboardButton.callback('🔴 Red', 'color:red'),
-            InlineKeyboardButton.callback('🔵 Blue', 'color:blue'),
+            InlineKeyboardButton.callback(text: '🔴 Red', data: 'color:red'),
+            InlineKeyboardButton.callback(text: '🔵 Blue', data: 'color:blue'),
           ],
           [
             InlineKeyboardButton.url(
-              '📖 Telegram Bot API docs',
-              'https://core.telegram.org/bots/api',
+              text: '📖 Telegram Bot API docs',
+              url: 'https://core.telegram.org/bots/api',
             ),
           ],
-        ]),
-      );
+        ],),);
     } else if (text == '/keyboard') {
       // A reply keyboard: replaces the user's device keyboard with buttons.
       // Tapping a button sends its label as a normal text message.
-      await bot.sendMessage(
-        chatId,
-        'Choose an option below:',
-        replyMarkup: ReplyKeyboardMarkup(
-          [
-            [KeyboardButton('Option A'), KeyboardButton('Option B')],
-            [KeyboardButton('📍 Share my location', requestLocation: true)],
-          ],
-          resizeKeyboard: true, // shrink the keyboard to fit its buttons
-          oneTimeKeyboard: true, // hide it again after one use
-        ),
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Choose an option below:', replyMarkup: ReplyKeyboardMarkup(keyboard: [
+            [KeyboardButton(text: 'Option A'), KeyboardButton(text: 'Option B')],
+            [KeyboardButton(text: '📍 Share my location', requestLocation: true)],
+          ], resizeKeyboard: true /* shrink the keyboard to fit its buttons */,
+          oneTimeKeyboard: true, /* hide it again after one use */),);
     } else if (text == '/remove') {
       // Hide the custom keyboard and go back to the device's default one.
-      await bot.sendMessage(
-        chatId,
-        'Keyboard removed.',
-        replyMarkup: ReplyKeyboardRemove(),
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Keyboard removed.', replyMarkup: ReplyKeyboardRemove());
     } else {
-      await bot.sendMessage(
-        chatId,
-        'Try /inline or /keyboard to see the two keyboard types in action.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Try /inline or /keyboard to see the two keyboard types in action.');
     }
   }
 }

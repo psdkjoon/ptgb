@@ -19,11 +19,11 @@ import 'package:ptgb/ptgb.dart';
 // In a real bot you'd likely persist this in a database instead.
 final Map<String, int> _counters = {};
 
-InlineKeyboardMarkup _counterKeyboard() => InlineKeyboardMarkup.single([
-      InlineKeyboardButton.callback('➖', 'counter:dec'),
-      InlineKeyboardButton.callback('🔄', 'counter:reset'),
-      InlineKeyboardButton.callback('➕', 'counter:inc'),
-    ]);
+InlineKeyboardMarkup _counterKeyboard() => InlineKeyboardMarkup.single(row: [
+      InlineKeyboardButton.callback(text: '➖', data: 'counter:dec'),
+      InlineKeyboardButton.callback(text: '🔄', data: 'counter:reset'),
+      InlineKeyboardButton.callback(text: '➕', data: 'counter:inc'),
+    ],);
 
 Future<void> main() async {
   final bot = Bot();
@@ -48,34 +48,22 @@ Future<void> main() async {
       _counters[key] = next;
 
       // Acknowledge the tap immediately so Telegram stops the loading spinner.
-      await bot.answerCallbackQuery(callback.id);
+      await bot.answerCallbackQuery(callbackQueryId: callback.id);
 
       // Edit the ORIGINAL message in place instead of sending a new one —
       // this is what makes counters, paginated menus, and live dashboards
       // feel responsive rather than spammy.
-      await bot.editMessageText(
-        'Count: $next',
-        chatId: chatId,
-        messageId: messageId,
-        replyMarkup: _counterKeyboard(),
-      );
+      await bot.editMessageText(text: 'Count: $next', chatId: chatId, messageId: messageId, replyMarkup: _counterKeyboard());
       continue;
     }
 
     final text = update.text;
     final chatId = update.chatId;
     if (text == '/counter' && chatId != null) {
-      final sent = await bot.sendMessage(
-        chatId,
-        'Count: 0',
-        replyMarkup: _counterKeyboard(),
-      );
+      final sent = await bot.sendMessage(chatId: chatId, text: 'Count: 0', replyMarkup: _counterKeyboard());
       _counters['$chatId:${sent.messageId}'] = 0;
     } else if (text != null && chatId != null) {
-      await bot.sendMessage(
-        chatId,
-        'Send /counter to try a live-editing message.',
-      );
+      await bot.sendMessage(chatId: chatId, text: 'Send /counter to try a live-editing message.');
     }
   }
 }

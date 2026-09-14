@@ -9,10 +9,10 @@ import 'dart:typed_data';
 /// that matches what you have:
 ///
 /// ```dart
-/// InputFile.id('AgACAgIAAxk...');           // reuse a file already on Telegram's servers
-/// InputFile.url('https://example.com/a.png'); // let Telegram fetch it
-/// InputFile.path('assets/photo.jpg');          // upload a local file
-/// InputFile.bytes(myBytes, filename: 'a.png'); // upload in-memory bytes
+/// InputFile.id(fileId: 'AgACAgIAAxk...');                      // reuse a file already on Telegram's servers
+/// InputFile.url(url: 'https://example.com/a.png');             // let Telegram fetch it
+/// InputFile.path(path: 'assets/photo.jpg');                     // upload a local file
+/// InputFile.bytes(bytes: myBytes, filename: 'a.png');           // upload in-memory bytes
 /// ```
 class InputFile {
   final String? _fileId;
@@ -31,15 +31,38 @@ class InputFile {
 
   /// Reuses a file already stored on Telegram's servers by its `file_id`.
   /// This is the fastest option since no bytes are re-uploaded.
-  factory InputFile.id(String fileId) =>
+  ///
+  /// ```dart
+  /// await bot.sendPhoto(
+  ///   chatId: update.chatId!,
+  ///   photo: InputFile.id(fileId: 'AgACAgIAAxk...'),
+  /// );
+  /// ```
+  factory InputFile.id({required String fileId}) =>
       InputFile._(fileId, null, null, null, null);
 
   /// Points Telegram at a publicly accessible [url] to fetch the file from.
-  factory InputFile.url(String url) => InputFile._(null, url, null, null, null);
+  ///
+  /// ```dart
+  /// await bot.sendPhoto(
+  ///   chatId: update.chatId!,
+  ///   photo: InputFile.url(url: 'https://example.com/a.png'),
+  /// );
+  /// ```
+  factory InputFile.url({required String url}) =>
+      InputFile._(null, url, null, null, null);
 
   /// Uploads a local file from disk at [path]. [filename] defaults to the
   /// file's base name if not provided.
-  factory InputFile.path(String path, {String? filename}) => InputFile._(
+  ///
+  /// ```dart
+  /// await bot.sendPhoto(
+  ///   chatId: update.chatId!,
+  ///   photo: InputFile.path(path: 'assets/photo.jpg'),
+  /// );
+  /// ```
+  factory InputFile.path({required String path, String? filename}) =>
+      InputFile._(
         null,
         null,
         path,
@@ -49,7 +72,15 @@ class InputFile {
 
   /// Uploads raw in-memory [bytes] under the given [filename], useful when
   /// you generated or downloaded the file content without writing it to disk.
-  factory InputFile.bytes(List<int> bytes, {required String filename}) =>
+  ///
+  /// ```dart
+  /// final bytes = await someImageGenerator();
+  /// await bot.sendPhoto(
+  ///   chatId: update.chatId!,
+  ///   photo: InputFile.bytes(bytes: bytes, filename: 'generated.png'),
+  /// );
+  /// ```
+  factory InputFile.bytes({required List<int> bytes, required String filename}) =>
       InputFile._(null, null, null, Uint8List.fromList(bytes), filename);
 
   /// Whether this file needs to be uploaded as multipart form data, as
