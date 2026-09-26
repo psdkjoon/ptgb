@@ -3,6 +3,18 @@ import 'input_file.dart';
 
 /// A new profile photo for a connected Telegram Business account, used with
 /// [Bot.setBusinessAccountProfilePhoto].
+///
+/// Construct a [InputProfilePhotoStatic] for a plain image, or an
+/// [InputProfilePhotoAnimated] for a short looping video preview:
+///
+/// ```dart
+/// await bot.setBusinessAccountProfilePhoto(
+///   businessConnectionId: connectionId,
+///   photo: InputProfilePhotoStatic(
+///     photo: InputFile.path(path: 'assets/new_avatar.jpg'),
+///   ),
+/// );
+/// ```
 abstract class InputProfilePhoto {
   /// Converts this photo to the JSON shape Telegram's API expects,
   /// registering any local upload into [files] as it goes.
@@ -64,7 +76,18 @@ class InputProfilePhotoAnimated implements InputProfilePhoto {
   }
 }
 
-/// The media content of a Telegram Story, used with [Bot.postStory] and [Bot.editStory].
+/// The media content of a Telegram Story, used with [Bot.postStory] and
+/// [Bot.editStory].
+///
+/// ```dart
+/// await bot.postStory(
+///   businessConnectionId: connectionId,
+///   content: InputStoryContentPhoto(
+///     photo: InputFile.path(path: 'assets/story.jpg'),
+///   ),
+///   activePeriod: 86400, // 24 hours, in seconds
+/// );
+/// ```
 abstract class InputStoryContent {
   /// Converts this content to the JSON shape Telegram's API expects,
   /// registering any local upload into [files] as it goes.
@@ -138,6 +161,24 @@ class InputStoryContentVideo implements InputStoryContent {
 
 /// Which gift types a connected Telegram Business account accepts, used
 /// with [Bot.setBusinessAccountGiftSettings].
+///
+/// Every field is required (unlike most option classes in `ptgb`) because
+/// Telegram's API replaces the whole setting at once — there's no partial
+/// update, so leaving one out would silently turn it off.
+///
+/// ```dart
+/// // Accept everything except gifted Premium subscriptions.
+/// await bot.setBusinessAccountGiftSettings(
+///   businessConnectionId: connectionId,
+///   showGiftButton: true,
+///   acceptedGiftTypes: AcceptedGiftTypes(
+///     unlimitedGifts: true,
+///     limitedGifts: true,
+///     uniqueGifts: true,
+///     premiumSubscription: false,
+///   ),
+/// );
+/// ```
 class AcceptedGiftTypes {
   /// Whether ordinary (non-limited) gifts are accepted.
   final bool unlimitedGifts;

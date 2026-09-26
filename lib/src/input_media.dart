@@ -8,6 +8,28 @@ import 'input_file.dart';
 /// Use a concrete subtype — [InputMediaPhoto], [InputMediaVideo],
 /// [InputMediaAnimation], [InputMediaAudio], or [InputMediaDocument] —
 /// depending on the kind of media you're sending.
+///
+/// ```dart
+/// // An album of 3 photos, sent as one gallery in the chat. Only the
+/// // *first* item's caption is shown as the album's caption.
+/// await bot.sendMediaGroup(
+///   chatId: chatId,
+///   media: [
+///     InputMediaPhoto(
+///       media: InputFile.path(path: 'trip/1.jpg'),
+///       caption: 'Day one!',
+///     ),
+///     InputMediaPhoto(media: InputFile.path(path: 'trip/2.jpg')),
+///     InputMediaPhoto(media: InputFile.url(url: 'https://example.com/3.jpg')),
+///   ],
+/// );
+/// ```
+///
+/// You can freely mix subtypes — e.g. photos and videos in the same
+/// album — but not [InputMediaAudio]/[InputMediaDocument] together with
+/// visual media in one group; Telegram groups those separately. To
+/// replace the media of an already-sent message instead of sending a new
+/// album, pass a single [InputMedia] item to [Bot.editMessageMedia].
 abstract class InputMedia {
   /// The Telegram media type string (`'photo'`, `'video'`, etc).
   final String type;
@@ -229,6 +251,19 @@ class InputMediaAudio extends InputMedia {
 /// depending on the kind of media you're sending. Unlike [InputMedia] items,
 /// paid media items don't carry their own caption; the caption is set once
 /// for the whole [Bot.sendPaidMedia] call.
+///
+/// ```dart
+/// // Sell a 2-photo preview for 50 Telegram Stars.
+/// await bot.sendPaidMedia(
+///   chatId: chatId,
+///   starCount: 50,
+///   caption: 'Full album unlocked after payment!',
+///   media: [
+///     InputPaidMediaPhoto(media: InputFile.path(path: 'preview/1.jpg')),
+///     InputPaidMediaPhoto(media: InputFile.path(path: 'preview/2.jpg')),
+///   ],
+/// );
+/// ```
 abstract class InputPaidMedia {
   /// The Telegram media type string (`'photo'` or `'video'`).
   final String type;

@@ -22,6 +22,14 @@ typedef Json = Map<String, dynamic>;
 ///   }
 /// }
 /// ```
+///
+/// Common [errorCode]s you'll see in practice: `400` (bad request — a
+/// parameter Telegram rejected, check [description]), `401`/`403`
+/// (unauthorized/forbidden — bad token, or the bot was blocked/kicked
+/// from the chat), `404` (chat/message/file not found, often because it
+/// was already deleted), and `429` (too many requests — see below). If
+/// you'd rather avoid `429`s proactively instead of catching them, pass a
+/// [RateLimiter] to [Bot.new].
 class TelegramApiException implements Exception {
   /// The numeric error code Telegram returned (e.g. `400`, `403`, `429`).
   final int errorCode;

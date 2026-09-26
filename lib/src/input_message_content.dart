@@ -5,13 +5,43 @@ import 'reply_options.dart';
 /// The content Telegram should actually send for an [InlineQueryResult],
 /// used instead of that result's own preview content — e.g. an
 /// [InlineQueryResultArticle] whose tap sends formatted text rather than a
-/// link. Use a concrete subtype depending on what kind of content you want sent.
+/// link. Use a concrete subtype depending on what kind of content you want
+/// sent: [InputTextMessageContent] for text, [InputLocationMessageContent]
+/// for a map point, [InputVenueMessageContent] for a named place,
+/// [InputContactMessageContent] for a vCard, or
+/// [InputInvoiceMessageContent] for a payable invoice.
+///
+/// ```dart
+/// final query = update.inlineQuery;
+/// if (query != null) {
+///   await bot.answerInlineQuery(
+///     inlineQueryId: query.id,
+///     results: [
+///       InlineQueryResultArticle(
+///         id: '1',
+///         title: 'Send a greeting',
+///         description: 'Sends "Hello from ptgb!" into the chat',
+///         inputMessageContent: InputTextMessageContent(
+///           messageText: 'Hello from ptgb!',
+///         ),
+///       ),
+///     ],
+///   );
+/// }
+/// ```
 abstract class InputMessageContent {
   /// Converts this content to the JSON shape Telegram's API expects.
   Json toJson();
 }
 
 /// Plain (optionally formatted) text content for an inline query result.
+///
+/// ```dart
+/// InputTextMessageContent(
+///   messageText: '*Bold* announcement!',
+///   parseMode: ParseMode.markdownV2,
+/// );
+/// ```
 class InputTextMessageContent implements InputMessageContent {
   /// The text to send, 1-4096 characters after entity parsing.
   final String messageText;
@@ -168,7 +198,25 @@ class InputContactMessageContent implements InputMessageContent {
       };
 }
 
-/// An invoice as the content of an inline query result.
+/// An invoice as the content of an inline query result — lets a user pay
+/// for something directly from an inline result, without the bot sending
+/// a separate `sendInvoice` message first.
+///
+/// ```dart
+/// InputInvoiceMessageContent(
+///   title: 'Coffee',
+///   description: 'One large coffee, on the house-shaped bot.',
+///   payload: 'order_coffee_large',
+///   currency: 'XTR', // Telegram Stars — no real-money provider needed
+///   prices: [
+///     {'label': 'Large coffee', 'amount': 50},
+///   ],
+/// );
+/// ```
+///
+/// For real-money currencies (not `'XTR'`), [providerToken] (from your
+/// chosen payment provider, set up via @BotFather) is required; for
+/// Telegram Stars, leave it `null`/empty.
 class InputInvoiceMessageContent implements InputMessageContent {
   /// The invoice's title.
   final String title;

@@ -191,7 +191,19 @@ TOKEN=
   /// Use this for brand-new API methods that don't have a typed wrapper yet.
   /// [method] is the raw Bot API method name (e.g. `'sendMessage'`), [params]
   /// is the JSON body, and [files] are any [InputFile]s that should be
-  /// uploaded as multipart attachments.
+  /// uploaded as multipart attachments. Returns the decoded `result` field
+  /// on success, or throws [TelegramApiException] on failure — every typed
+  /// method on [Bot] is built on top of exactly this.
+  ///
+  /// ```dart
+  /// // Calling a method the same way sendMessage does internally, in case
+  /// // ptgb hasn't caught up with a brand new Bot API method yet:
+  /// final result = await bot.call('sendMessage', {
+  ///   'chat_id': chatId,
+  ///   'text': 'Hello via the raw API!',
+  /// });
+  /// print(result['message_id']);
+  /// ```
   ///
   /// If this [Bot] was created with a [RateLimiter], every call — including
   /// ones made through this method directly — waits its turn first.
@@ -204,7 +216,12 @@ TOKEN=
     return _client.call(method, params, files);
   }
 
-  /// Returns basic information about the bot itself as a [User] object (in raw JSON form).
+  /// Returns basic information about the bot itself as a [User].
+  ///
+  /// ```dart
+  /// final me = await bot.getMe();
+  /// print('Running as @${me.username}');
+  /// ```
   ///
   /// Handy as a quick way to verify that [token] is valid.
   Future<User> getMe() async => User(_o(await call('getMe')));
@@ -237,8 +254,24 @@ TOKEN=
     return _l(raw).map(Update.new).toList();
   }
 
-  /// Registers [url] as the webhook endpoint Telegram will POST updates to.
-  /// Use [serveWebhook] on your side to actually receive them.
+  /// Registers [url] as the webhook endpoint Telegram will POST updates to,
+  /// switching the bot from polling to push-based delivery. Use
+  /// [serveWebhook] on your side to actually receive them, or point your
+  /// own HTTP server at [url] and decode each POST body with
+  /// `Update.new(jsonDecode(body))` yourself.
+  ///
+  /// ```dart
+  /// await bot.setWebhook(
+  ///   url: 'https://example.com/telegram-webhook',
+  ///   secretToken: 'a-long-random-string', // verify it on incoming requests
+  /// );
+  /// ```
+  ///
+  /// [secretToken] (if set) is echoed back by Telegram in every request's
+  /// `X-Telegram-Bot-Api-Secret-Token` header — check it in your handler to
+  /// reject requests that didn't actually come from Telegram. Call
+  /// [deleteWebhook] before switching back to [poll]; the two are mutually
+  /// exclusive.
   Future<bool> setWebhook({
     required String url,
     InputFile? certificate,
@@ -344,6 +377,26 @@ TOKEN=
   /// behind a reverse proxy or with a direct TLS certificate via [securityContext].
   /// Pair with [setWebhook] so Telegram knows where to send updates.
   ///
+  /// ```dart
+  /// await bot.setWebhook(
+  ///   url: 'https://example.com/hook',
+  ///   secretToken: 'a-long-random-string',
+  /// );
+  /// await bot.serveWebhook(
+  ///   port: 8443,
+  ///   secretToken: 'a-long-random-string', // must match setWebhook's
+  ///   onUpdate: (update) {
+  ///     if (update.text == '/start') {
+  ///       bot.sendMessage(chatId: update.chatId!, text: 'Hello!');
+  ///     }
+  ///   },
+  /// );
+  /// ```
+  ///
+  /// Behind a reverse proxy (nginx, Caddy, ...) that already terminates TLS,
+  /// leave [securityContext] `null` and bind to plain HTTP on a local port;
+  /// only set [securityContext] if this server should terminate TLS itself.
+  ///
   /// If parsing the request body or your [onUpdate] callback throws, the
   /// exception is caught (so one bad request can't crash the server) and
   /// passed to [onError] if you provide one — handy for logging. Left
@@ -409,6 +462,22 @@ TOKEN=
   /// This is the most common method in the whole API. Use [parseMode] to enable
   /// Markdown/HTML formatting, [replyMarkup] to attach an inline/reply keyboard,
   /// and [replyParameters] to reply to an existing message.
+  ///
+  /// ```dart
+  /// final sent = await bot.sendMessage(
+  ///   chatId: chatId, // a numeric chat id, or '@channelusername'
+  ///   text: '*Hello!* Pick one:',
+  ///   parseMode: ParseMode.markdownV2,
+  ///   replyMarkup: InlineKeyboardMarkup(rows: [
+  ///     [InlineKeyboardButton.callback(text: 'Option A', data: 'opt:a')],
+  ///   ]),
+  /// );
+  /// // sent.messageId is what you'd pass to editMessageText/deleteMessage later.
+  /// ```
+  ///
+  /// [chatId] accepts an `int` chat id or a `String` like `'@username'` for
+  /// public channels/supergroups — same for every other method with an
+  /// `Object chatId` parameter in this API.
   Future<Message> sendMessage({
     required Object chatId,
     required String text,
@@ -478,7 +547,16 @@ TOKEN=
       );
 
   /// Forwards a single existing message from [fromChatId] to [chatId], keeping
-  /// the "Forwarded from" attribution.
+  /// the "Forwarded from" attribution. Want to send a copy *without* that
+  /// attribution instead? Use [copyMessage].
+  ///
+  /// ```dart
+  /// await bot.forwardMessage(
+  ///   chatId: destinationChatId,
+  ///   fromChatId: sourceChatId,
+  ///   messageId: original.messageId,
+  /// );
+  /// ```
   Future<Message> forwardMessage({
     required Object chatId,
     required Object fromChatId,
@@ -589,6 +667,20 @@ TOKEN=
 
   /// Sends a photo. [photo] accepts a `file_id`, a URL, or a local upload via
   /// [InputFile.path]/[InputFile.bytes].
+  ///
+  /// ```dart
+  /// await bot.sendPhoto(
+  ///   chatId: chatId,
+  ///   photo: InputFile.path(path: 'assets/cover.jpg'),
+  ///   caption: 'Our new logo!',
+  ///   hasSpoiler: false,
+  /// );
+  /// ```
+  ///
+  /// This and every other `send*` media method ([sendAudio], [sendDocument],
+  /// [sendVideo], [sendAnimation], [sendVoice], [sendVideoNote]) share the
+  /// same [InputFile] convention for their media parameter — see
+  /// [InputFile] for the full set of ways to provide the bytes.
   Future<Message> sendPhoto({
     required Object chatId,
     required InputFile photo,
@@ -688,7 +780,16 @@ TOKEN=
         ),
       );
 
-  /// Sends a general file/document of any type.
+  /// Sends a general file/document of any type. See [sendPhoto] for the
+  /// shared [InputFile] convention every media method uses.
+  ///
+  /// ```dart
+  /// await bot.sendDocument(
+  ///   chatId: chatId,
+  ///   document: InputFile.path(path: 'reports/q3.pdf'),
+  ///   caption: 'Q3 report attached.',
+  /// );
+  /// ```
   Future<Message> sendDocument({
     required Object chatId,
     required InputFile document,
@@ -1085,6 +1186,29 @@ TOKEN=
 
   /// Sends a point on the map. Set [livePeriod] to share a live, periodically
   /// updating location instead of a static point.
+  ///
+  /// ```dart
+  /// // Static pin.
+  /// await bot.sendLocation(chatId: chatId, latitude: 48.8584, longitude: 2.2945);
+  ///
+  /// // Live location, updatable for up to an hour (max livePeriod: 86400
+  /// // is the special "until manually stopped" value):
+  /// final sent = await bot.sendLocation(
+  ///   chatId: chatId,
+  ///   latitude: 48.8584,
+  ///   longitude: 2.2945,
+  ///   livePeriod: 3600,
+  /// );
+  /// // ...later, as the position changes...
+  /// await bot.editMessageLiveLocation(
+  ///   chatId: chatId,
+  ///   messageId: sent.messageId,
+  ///   latitude: 48.8600,
+  ///   longitude: 2.2950,
+  /// );
+  /// // ...and once done sharing:
+  /// await bot.stopMessageLiveLocation(chatId: chatId, messageId: sent.messageId);
+  /// ```
   Future<Message> sendLocation({
     required Object chatId,
     required double latitude,
@@ -1131,6 +1255,16 @@ TOKEN=
       );
 
   /// Sends information about a venue (a location plus a name and address).
+  ///
+  /// ```dart
+  /// await bot.sendVenue(
+  ///   chatId: chatId,
+  ///   latitude: 48.8606,
+  ///   longitude: 2.3376,
+  ///   title: 'Louvre Museum',
+  ///   address: 'Rue de Rivoli, 75001 Paris',
+  /// );
+  /// ```
   Future<Message> sendVenue({
     required Object chatId,
     required double latitude,
@@ -1179,6 +1313,14 @@ TOKEN=
       );
 
   /// Sends a phone contact card.
+  ///
+  /// ```dart
+  /// await bot.sendContact(
+  ///   chatId: chatId,
+  ///   phoneNumber: '+1234567890',
+  ///   firstName: 'Support Team',
+  /// );
+  /// ```
   Future<Message> sendContact({
     required Object chatId,
     required String phoneNumber,
@@ -1219,7 +1361,18 @@ TOKEN=
       );
 
   /// Sends a native Telegram poll or quiz. Use [type] set to `PollType.quiz` for
-  /// a quiz poll and provide [correctOptionId].
+  /// a quiz poll and provide [correctOptionId]. See [PollType] for a fuller
+  /// example of both poll flavors, and [Poll]/[Bot.stopPoll] for reading
+  /// results and closing the poll early.
+  ///
+  /// ```dart
+  /// await bot.sendPoll(
+  ///   chatId: chatId,
+  ///   question: 'Best time for the meeting?',
+  ///   options: ['9am', '2pm', '5pm'],
+  ///   isAnonymous: false, // required if you want per-voter answers via Update.pollAnswer
+  /// );
+  /// ```
   Future<Message> sendPoll({
     required Object chatId,
     required String question,
@@ -1355,9 +1508,21 @@ TOKEN=
   /// [messageId] for bot-sent messages, or [inlineMessageId] when editing a
   /// message that came from an inline query result.
   ///
+  /// ```dart
+  /// final sent = await bot.sendMessage(chatId: chatId, text: 'Loading...');
+  /// await bot.editMessageText(
+  ///   chatId: chatId,
+  ///   messageId: sent.messageId,
+  ///   text: 'Done!',
+  /// );
+  /// ```
+  ///
   /// Returns the edited [Message], or `true` when editing an inline
   /// message identified only by [inlineMessageId] (Telegram doesn't send a
-  /// full message object back in that case).
+  /// full message object back in that case) — cast accordingly:
+  /// `final edited = result as Message;`. Note that Telegram rejects an
+  /// edit whose [text] is identical to the message's current text with a
+  /// `400 Bad Request: message is not modified` [TelegramApiException].
   Future<Object> editMessageText({
     required String text,
     String? businessConnectionId,
@@ -1523,7 +1688,24 @@ TOKEN=
       );
 
   /// Replaces just the inline keyboard attached to a message, leaving its
-  /// content untouched.
+  /// content untouched. The common use is disabling/updating buttons right
+  /// after they're tapped:
+  ///
+  /// ```dart
+  /// final query = update.callbackQuery!;
+  /// await bot.answerCallbackQuery(callbackQueryId: query.id);
+  /// // query.message is raw JSON (it may be a full Message or an
+  /// // InaccessibleMessage) — wrap it to use the typed getters:
+  /// final original = Message(query.message!);
+  /// await bot.editMessageReplyMarkup(
+  ///   chatId: original.chat.id,
+  ///   messageId: original.messageId,
+  ///   replyMarkup: InlineKeyboardMarkup(rows: [
+  ///     [InlineKeyboardButton.callback(text: '✅ Voted', data: 'noop')],
+  ///   ]),
+  /// );
+  /// // Pass replyMarkup: null to remove the keyboard entirely.
+  /// ```
   ///
   /// Returns the edited [Message], or `true` when editing an inline
   /// message identified only by [inlineMessageId].
@@ -1567,6 +1749,23 @@ TOKEN=
 
   /// Deletes a single message. Bots can only delete their own messages in
   /// private chats, but have wider delete permissions in groups/channels they admin.
+  ///
+  /// The [messageId] you need is always the one returned when the message
+  /// was sent — every `send*` method returns a [Message], and [Message]
+  /// has a [Message.messageId] getter:
+  ///
+  /// ```dart
+  /// final sent = await bot.sendMessage(chatId: chatId, text: 'Temporary notice');
+  /// await Future<void>.delayed(const Duration(seconds: 10));
+  /// await bot.deleteMessage(chatId: chatId, messageId: sent.messageId);
+  /// ```
+  ///
+  /// To delete a message a *user* sent instead, read [Message.messageId]
+  /// off the incoming `update.message` the same way — e.g.
+  /// `update.message!.messageId`, or the `update.messageId` shortcut.
+  /// Deletion beyond 48 hours old, or of service messages in some chat
+  /// types, may be rejected by Telegram with a [TelegramApiException]
+  /// regardless of admin rights.
   Future<bool> deleteMessage({
     required Object chatId,
     required int messageId,
@@ -1577,7 +1776,12 @@ TOKEN=
         ),
       );
 
-  /// Deletes a batch of messages ([messageIds]) in one call.
+  /// Deletes a batch of messages ([messageIds]) in one call — more
+  /// efficient than looping [deleteMessage] one at a time.
+  ///
+  /// ```dart
+  /// await bot.deleteMessages(chatId: chatId, messageIds: [101, 102, 103]);
+  /// ```
   Future<bool> deleteMessages({
     required Object chatId,
     required List<int> messageIds,
@@ -1589,6 +1793,14 @@ TOKEN=
       );
 
   /// Returns a user's profile photos, paginated via [offset]/[limit].
+  ///
+  /// ```dart
+  /// final photos = await bot.getUserProfilePhotos(userId: userId, limit: 1);
+  /// if (photos.totalCount > 0) {
+  ///   final largest = photos.photos.first.last; // first photo, largest size
+  ///   final bytes = await bot.downloadFileById(fileId: largest.fileId);
+  /// }
+  /// ```
   Future<UserProfilePhotos> getUserProfilePhotos({
     required int userId,
     int? offset,
@@ -1604,9 +1816,12 @@ TOKEN=
         ),
       );
 
-  /// Resolves a Telegram `file_id` into a [Json] containing `file_path`, which
-  /// can then be downloaded with [downloadFile] or streamed directly from
-  /// `https://api.telegram.org/file/bot<token>/<file_path>`.
+  /// Resolves a Telegram `file_id` into a [TelegramFile] containing
+  /// `filePath`, which can then be downloaded with [downloadFile] or
+  /// streamed directly from
+  /// `https://api.telegram.org/file/bot<token>/<file_path>`. See
+  /// [TelegramFile] for the full download flow, or use
+  /// [downloadFileById] to skip straight to the bytes in one call.
   Future<TelegramFile> getFile({
     required String fileId,
   }) async =>
@@ -1614,6 +1829,18 @@ TOKEN=
 
   /// Bans a user from the chat. In supergroups/channels they won't be able to
   /// return until unbanned; set [untilDate] for a temporary ban.
+  ///
+  /// ```dart
+  /// // Permanent ban, deleting their recent messages too.
+  /// await bot.banChatMember(chatId: chatId, userId: userId, revokeMessages: true);
+  ///
+  /// // 24-hour timeout instead:
+  /// await bot.banChatMember(
+  ///   chatId: chatId,
+  ///   userId: userId,
+  ///   untilDate: DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch ~/ 1000,
+  /// );
+  /// ```
   Future<bool> banChatMember({
     required Object chatId,
     required int userId,
@@ -1631,6 +1858,14 @@ TOKEN=
 
   /// Lifts a ban, allowing the user to rejoin. Set [onlyIfBanned] to avoid
   /// accidentally removing a user who is currently a member.
+  ///
+  /// ```dart
+  /// await bot.unbanChatMember(chatId: chatId, userId: userId, onlyIfBanned: true);
+  /// ```
+  ///
+  /// Note: this doesn't add the user back to the chat automatically — it
+  /// just makes rejoining *possible* again (they still need to use an
+  /// invite link, or be added by an admin, unless the chat is public).
   Future<bool> unbanChatMember({
     required Object chatId,
     required int userId,
@@ -1646,6 +1881,18 @@ TOKEN=
 
   /// Restricts what a member can do in a supergroup via [permissions]
   /// (e.g. mute them by disabling `canSendMessages`), optionally until [untilDate].
+  ///
+  /// ```dart
+  /// // Mute for 10 minutes.
+  /// await bot.restrictChatMember(
+  ///   chatId: chatId,
+  ///   userId: userId,
+  ///   permissions: ChatPermissions(canSendMessages: false),
+  ///   untilDate: DateTime.now().add(const Duration(minutes: 10)).millisecondsSinceEpoch ~/ 1000,
+  /// );
+  /// ```
+  ///
+  /// See [ChatPermissions] for the full set of restrictable actions.
   Future<bool> restrictChatMember({
     required Object chatId,
     required int userId,
@@ -1666,6 +1913,36 @@ TOKEN=
 
   /// Promotes or demotes a user to/from chat administrator, granting the
   /// specific admin privileges passed as named booleans.
+  ///
+  /// ```dart
+  /// // Promote with a modest moderator rights set.
+  /// await bot.promoteChatMember(
+  ///   chatId: chatId,
+  ///   userId: userId,
+  ///   canDeleteMessages: true,
+  ///   canRestrictMembers: true,
+  ///   canInviteUsers: true,
+  /// );
+  ///
+  /// // Demote back to a regular member by passing every right as false.
+  /// await bot.promoteChatMember(
+  ///   chatId: chatId,
+  ///   userId: userId,
+  ///   canManageChat: false,
+  ///   canDeleteMessages: false,
+  ///   canManageVideoChats: false,
+  ///   canRestrictMembers: false,
+  ///   canPromoteMembers: false,
+  ///   canChangeInfo: false,
+  ///   canInviteUsers: false,
+  ///   canPinMessages: false,
+  /// );
+  /// ```
+  ///
+  /// Unlike [ChatAdministratorRights] (used for
+  /// [setMyDefaultAdministratorRights]), this method takes the rights as
+  /// flat parameters rather than an object — any right left `null` is
+  /// simply not changed from its current value.
   Future<bool> promoteChatMember({
     required Object chatId,
     required int userId,
@@ -1711,7 +1988,17 @@ TOKEN=
         }),
       );
 
-  /// Sets a custom title (shown instead of "Admin") for an admin in a supergroup.
+  /// Sets a custom title (shown instead of "Admin") for an admin in a
+  /// supergroup. The target user must already be an admin (see
+  /// [promoteChatMember]) and [customTitle] must be 0-16 characters.
+  ///
+  /// ```dart
+  /// await bot.setChatAdministratorCustomTitle(
+  ///   chatId: chatId,
+  ///   userId: userId,
+  ///   customTitle: 'Moderator',
+  /// );
+  /// ```
   Future<bool> setChatAdministratorCustomTitle({
     required Object chatId,
     required int userId,
@@ -1725,7 +2012,13 @@ TOKEN=
         }),
       );
 
-  /// Bans an anonymous channel (acting as a sender chat) from a group/channel.
+  /// Bans an anonymous channel (acting as a sender chat) from a
+  /// group/channel — e.g. a channel that's posting as itself via linked
+  /// discussion, rather than a specific user.
+  ///
+  /// ```dart
+  /// await bot.banChatSenderChat(chatId: chatId, senderChatId: spamChannelId);
+  /// ```
   Future<bool> banChatSenderChat({
     required Object chatId,
     required int senderChatId,
@@ -1736,7 +2029,7 @@ TOKEN=
         ),
       );
 
-  /// Unbans a previously banned sender chat.
+  /// Unbans a previously banned sender chat. See [banChatSenderChat].
   Future<bool> unbanChatSenderChat({
     required Object chatId,
     required int senderChatId,
@@ -1762,7 +2055,15 @@ TOKEN=
         }),
       );
 
-  /// Generates a new primary invite link for the chat, invalidating the previous one.
+  /// Generates a new primary invite link for the chat, invalidating the
+  /// previous one — this is the chat's single permanent link
+  /// (`ChatFullInfo.inviteLink`), not one of the trackable extra links from
+  /// [createChatInviteLink].
+  ///
+  /// ```dart
+  /// final link = await bot.exportChatInviteLink(chatId: chatId);
+  /// print('New invite link: $link'); // a plain String, unlike createChatInviteLink
+  /// ```
   Future<String> exportChatInviteLink({
     required Object chatId,
   }) async =>
@@ -1790,7 +2091,9 @@ TOKEN=
         ),
       );
 
-  /// Edits a previously created non-primary invite link.
+  /// Edits a previously created non-primary invite link. All fields
+  /// besides [chatId]/[inviteLink] are optional — only the ones you pass
+  /// are changed. See [ChatInviteLink] for creating one in the first place.
   Future<ChatInviteLink> editChatInviteLink({
     required Object chatId,
     required String inviteLink,
@@ -1813,7 +2116,10 @@ TOKEN=
         ),
       );
 
-  /// Revokes an invite link so it can no longer be used to join.
+  /// Revokes an invite link so it can no longer be used to join. Revoking
+  /// the chat's *primary* link works too, but note it then generates a
+  /// brand new primary link automatically (same effect as
+  /// [exportChatInviteLink]).
   Future<ChatInviteLink> revokeChatInviteLink({
     required Object chatId,
     required String inviteLink,
@@ -1829,6 +2135,17 @@ TOKEN=
 
   /// Creates a subscription invite link that charges [subscriptionPeriod] /
   /// [subscriptionPrice] in Telegram Stars for access to the channel.
+  /// Channels only — this isn't available for groups/supergroups.
+  ///
+  /// ```dart
+  /// // Charge 100 Stars for a recurring 30-day subscription.
+  /// final link = await bot.createChatSubscriptionInviteLink(
+  ///   chatId: channelId,
+  ///   subscriptionPeriod: 2592000, // 30 days, in seconds — currently the only supported value
+  ///   subscriptionPrice: 100,
+  ///   name: 'Premium tier',
+  /// );
+  /// ```
   Future<ChatInviteLink> createChatSubscriptionInviteLink({
     required Object chatId,
     required int subscriptionPeriod,
@@ -1846,7 +2163,9 @@ TOKEN=
         ),
       );
 
-  /// Edits the name of an existing subscription invite link.
+  /// Edits the name of an existing subscription invite link. Unlike
+  /// [editChatInviteLink], only [name] can be changed here — the price and
+  /// period are fixed once a subscription link is created.
   Future<ChatInviteLink> editChatSubscriptionInviteLink({
     required Object chatId,
     required String inviteLink,
@@ -1884,27 +2203,41 @@ TOKEN=
         ),
       );
 
-  /// Sets a new chat photo, uploaded fresh (not reused via `file_id`).
+  /// Sets a new chat photo, uploaded fresh — [photo] must be a local
+  /// upload ([InputFile.path]/[InputFile.bytes]), not a `file_id` or URL
+  /// (Telegram doesn't allow reusing/fetching for this specific method).
+  ///
+  /// ```dart
+  /// await bot.setChatPhoto(
+  ///   chatId: chatId,
+  ///   photo: InputFile.path(path: 'assets/group_icon.png'),
+  /// );
+  /// ```
   Future<bool> setChatPhoto({
     required Object chatId,
     required InputFile photo,
   }) async =>
       _b(await call('setChatPhoto', {'chat_id': chatId}, {'photo': photo}));
 
-  /// Deletes the chat's current photo.
+  /// Deletes the chat's current photo, reverting to no photo.
   Future<bool> deleteChatPhoto({
     required Object chatId,
   }) async =>
       _b(await call('deleteChatPhoto', {'chat_id': chatId}));
 
   /// Renames the chat.
+  ///
+  /// ```dart
+  /// await bot.setChatTitle(chatId: chatId, title: 'New Group Name');
+  /// ```
   Future<bool> setChatTitle({
     required Object chatId,
     required String title,
   }) async =>
       _b(await call('setChatTitle', {'chat_id': chatId, 'title': title}));
 
-  /// Sets or clears the chat's description.
+  /// Sets the chat's description, or clears it by passing `null`/omitting
+  /// [description].
   Future<bool> setChatDescription({
     required Object chatId,
     String? description,
@@ -1917,6 +2250,14 @@ TOKEN=
       );
 
   /// Pins a message at the top of the chat.
+  ///
+  /// ```dart
+  /// await bot.pinChatMessage(
+  ///   chatId: chatId,
+  ///   messageId: sent.messageId,
+  ///   disableNotification: true, // don't ping everyone about it
+  /// );
+  /// ```
   Future<bool> pinChatMessage({
     required Object chatId,
     required int messageId,
@@ -1934,7 +2275,8 @@ TOKEN=
         }),
       );
 
-  /// Unpins a message. If [messageId] is omitted, unpins the most recently pinned message.
+  /// Unpins a message. If [messageId] is omitted, unpins the most recently
+  /// pinned message. See [unpinAllChatMessages] to clear every pin at once.
   Future<bool> unpinChatMessage({
     required Object chatId,
     String? businessConnectionId,
@@ -1955,19 +2297,28 @@ TOKEN=
   }) async =>
       _b(await call('unpinAllChatMessages', {'chat_id': chatId}));
 
-  /// Makes the bot leave the given group, supergroup, or channel.
+  /// Makes the bot leave the given group, supergroup, or channel. Has no
+  /// effect (and no meaning) in private chats.
   Future<bool> leaveChat({
     required Object chatId,
   }) async =>
       _b(await call('leaveChat', {'chat_id': chatId}));
 
-  /// Fetches up-to-date information about a chat (title, description, permissions, etc).
+  /// Fetches up-to-date information about a chat (title, description,
+  /// permissions, etc) — see [ChatFullInfo] for a usage example and what's
+  /// available on it beyond the [Chat] shape embedded in messages.
   Future<ChatFullInfo> getChat({
     required Object chatId,
   }) async =>
       ChatFullInfo(_o(await call('getChat', {'chat_id': chatId})));
 
-  /// Lists every administrator (and the owner) of the chat.
+  /// Lists every administrator (and the owner) of the chat — for a single
+  /// member's status, use the cheaper [getChatMember] instead.
+  ///
+  /// ```dart
+  /// final admins = await bot.getChatAdministrators(chatId: chatId);
+  /// print(admins.map((m) => m.user.fullName).join(', '));
+  /// ```
   Future<List<ChatMember>> getChatAdministrators({
     required Object chatId,
   }) async =>
@@ -1992,7 +2343,9 @@ TOKEN=
         ),
       );
 
-  /// Sets the group's custom sticker set (supergroups only).
+  /// Sets the group's custom sticker set (supergroups only, and only if
+  /// the group's boost level is high enough for Telegram to allow one).
+  /// [stickerSetName] must already exist — see [createNewStickerSet].
   Future<bool> setChatStickerSet({
     required Object chatId,
     required String stickerSetName,
@@ -2004,17 +2357,42 @@ TOKEN=
         ),
       );
 
-  /// Removes the group's custom sticker set.
+  /// Removes the group's custom sticker set. See [setChatStickerSet].
   Future<bool> deleteChatStickerSet({
     required Object chatId,
   }) async =>
       _b(await call('deleteChatStickerSet', {'chat_id': chatId}));
 
-  /// Lists the built-in custom emoji stickers usable as forum topic icons.
+  /// Lists the built-in custom emoji stickers usable as a forum topic's
+  /// icon — pass one's `customEmojiId` as [createForumTopic]'s
+  /// `iconCustomEmojiId`.
   Future<List<Sticker>> getForumTopicIconStickers() async =>
       _l(await call('getForumTopicIconStickers')).map(Sticker.new).toList();
 
-  /// Creates a new topic in a forum-enabled supergroup.
+  /// Creates a new topic in a forum-enabled supergroup (see
+  /// `ChatFullInfo.isForum`/`Chat.isForum` to check first).
+  ///
+  /// ```dart
+  /// final topic = await bot.createForumTopic(chatId: chatId, name: 'Bug Reports');
+  ///
+  /// // Send into that topic by passing its messageThreadId:
+  /// await bot.sendMessage(
+  ///   chatId: chatId,
+  ///   messageThreadId: topic.messageThreadId,
+  ///   text: 'Welcome to the Bug Reports topic!',
+  /// );
+  ///
+  /// // Lifecycle: close/reopen to lock/unlock, or delete outright.
+  /// await bot.closeForumTopic(chatId: chatId, messageThreadId: topic.messageThreadId);
+  /// await bot.reopenForumTopic(chatId: chatId, messageThreadId: topic.messageThreadId);
+  /// await bot.deleteForumTopic(chatId: chatId, messageThreadId: topic.messageThreadId);
+  /// ```
+  ///
+  /// The built-in "General" topic (id `1`, always present, can't be
+  /// deleted) has its own parallel set of methods instead:
+  /// [editGeneralForumTopic], [closeGeneralForumTopic],
+  /// [reopenGeneralForumTopic], [hideGeneralForumTopic],
+  /// [unhideGeneralForumTopic], [unpinAllGeneralForumTopicMessages].
   Future<ForumTopic> createForumTopic({
     required Object chatId,
     required String name,
@@ -2138,6 +2516,17 @@ TOKEN=
   /// You should call this for *every* callback query you receive, even with no
   /// arguments, so Telegram stops showing a loading spinner on the button. Set
   /// [showAlert] to show the response as a popup instead of a toast.
+  ///
+  /// ```dart
+  /// await bot.answerCallbackQuery(callbackQueryId: query.id); // silent ack
+  /// await bot.answerCallbackQuery(
+  ///   callbackQueryId: query.id,
+  ///   text: 'Vote recorded!',
+  ///   showAlert: true, // blocking popup instead of a brief toast
+  /// );
+  /// ```
+  ///
+  /// See [CallbackQuery] for the full receive-and-respond flow.
   Future<bool> answerCallbackQuery({
     required String callbackQueryId,
     String? text,
@@ -2157,6 +2546,19 @@ TOKEN=
 
   /// Sets the list of commands shown in the chat's `/` menu, optionally scoped
   /// via [scope]/[languageCode].
+  ///
+  /// ```dart
+  /// await bot.setMyCommands(commands: [
+  ///   {'command': 'start', 'description': 'Start the bot'},
+  ///   {'command': 'help', 'description': 'Show help'},
+  /// ]);
+  /// ```
+  ///
+  /// [scope] and [commands] are raw JSON (Telegram's `BotCommandScope` and
+  /// `BotCommand` shapes) rather than typed classes — build a scope as
+  /// e.g. `{'type': 'chat', 'chat_id': chatId}` to target one specific
+  /// chat instead of every chat by default, and read the result back with
+  /// [getMyCommands] (which *does* return typed [BotCommand]s).
   Future<bool> setMyCommands({
     required List<Json> commands,
     Json? scope,
@@ -2171,7 +2573,7 @@ TOKEN=
       );
 
   /// Clears the command list for the given [scope]/[languageCode], falling
-  /// back to a higher-level scope.
+  /// back to a higher-level scope. See [setMyCommands] for the shape of [scope].
   Future<bool> deleteMyCommands({Json? scope, String? languageCode}) async =>
       _b(
         await call('deleteMyCommands', {
@@ -2180,7 +2582,9 @@ TOKEN=
         }),
       );
 
-  /// Returns the currently configured command list for a given [scope]/[languageCode].
+  /// Returns the currently configured command list for a given
+  /// [scope]/[languageCode]. See [setMyCommands] for the shape of [scope]
+  /// and for setting the list in the first place.
   Future<List<BotCommand>> getMyCommands({
     Json? scope,
     String? languageCode,
@@ -2193,6 +2597,18 @@ TOKEN=
       ).map(BotCommand.new).toList();
 
   /// Sets the bot's display name.
+  ///
+  /// ```dart
+  /// await bot.setMyName(name: 'Order Assistant');
+  /// await bot.setMyName(name: 'Asistente de Pedidos', languageCode: 'es');
+  /// final current = await bot.getMyName(languageCode: 'es');
+  /// print(current.name);
+  /// ```
+  ///
+  /// [languageCode] scopes the value to users with that Telegram app
+  /// language; omit it to set the default shown to everyone else. The
+  /// same [languageCode] pattern applies to [setMyDescription] and
+  /// [setMyShortDescription] below.
   Future<bool> setMyName({String? name, String? languageCode}) async => _b(
         await call('setMyName', {
           if (name != null) 'name': name,
@@ -2209,7 +2625,10 @@ TOKEN=
         ),
       );
 
-  /// Sets the description shown on the bot's profile page before a user has started it.
+  /// Sets the long description shown on the bot's profile page before a
+  /// user has started a chat with it (as opposed to [setMyShortDescription],
+  /// shown in smaller/preview contexts). See [setMyName] for the
+  /// [languageCode] pattern shared across all three.
   Future<bool> setMyDescription({
     String? description,
     String? languageCode,
@@ -2231,7 +2650,9 @@ TOKEN=
         ),
       );
 
-  /// Sets the short description shown alongside the bot's profile photo and in chat sharing.
+  /// Sets the short description shown alongside the bot's profile photo
+  /// and when the bot is shared/forwarded — kept brief, unlike the fuller
+  /// [setMyDescription]. See [setMyName] for the [languageCode] pattern.
   Future<bool> setMyShortDescription({
     String? shortDescription,
     String? languageCode,
@@ -2256,6 +2677,23 @@ TOKEN=
       );
 
   /// Configures the menu button shown in a private chat (e.g. to open a Web App).
+  ///
+  /// ```dart
+  /// await bot.setChatMenuButton(
+  ///   chatId: chatId, // omit to set the default for all users
+  ///   menuButton: {
+  ///     'type': 'web_app',
+  ///     'text': 'Open Shop',
+  ///     'web_app': {'url': 'https://example.com/shop'},
+  ///   },
+  /// );
+  /// // Or restore Telegram's default "Menu" button showing /commands:
+  /// await bot.setChatMenuButton(chatId: chatId, menuButton: {'type': 'default'});
+  /// ```
+  ///
+  /// [menuButton] is raw JSON (Telegram's `MenuButton` union shape) rather
+  /// than a typed class; read the current one back with [getChatMenuButton]
+  /// (which *does* return the typed [MenuButton]).
   Future<bool> setChatMenuButton({Object? chatId, Json? menuButton}) async =>
       _b(
         await call('setChatMenuButton', {
@@ -2318,7 +2756,20 @@ TOKEN=
         }),
       );
 
-  /// Sends a [result] back to a Web App that was opened via a `switch_inline_query`-style button.
+  /// Sends a [result] back to a Web App that was opened via a
+  /// `switch_inline_query`-style button — the Mini App equivalent of
+  /// [answerInlineQuery], but for a single result rather than a list.
+  ///
+  /// ```dart
+  /// await bot.answerWebAppQuery(
+  ///   webAppQueryId: queryId, // from the Mini App's initData/JS bridge
+  ///   result: InlineQueryResultArticle(
+  ///     id: '1',
+  ///     title: 'Selected item',
+  ///     inputMessageContent: InputTextMessageContent(messageText: 'You picked X!'),
+  ///   ),
+  /// );
+  /// ```
   Future<SentWebAppMessage> answerWebAppQuery({
     required String webAppQueryId,
     required InlineQueryResult result,
@@ -2332,7 +2783,24 @@ TOKEN=
         ),
       );
 
-  /// Pre-uploads an inline message result so it can be reused efficiently across many users.
+  /// Pre-uploads an inline message result so it can be shared efficiently
+  /// from a Mini App without re-hitting your bot each time — see
+  /// [PreparedInlineMessage] for how the resulting id is actually used on
+  /// the client side.
+  ///
+  /// ```dart
+  /// final prepared = await bot.savePreparedInlineMessage(
+  ///   userId: userId,
+  ///   result: InlineQueryResultArticle(
+  ///     id: '1',
+  ///     title: 'Share this',
+  ///     inputMessageContent: InputTextMessageContent(messageText: 'Check this out!'),
+  ///   ),
+  ///   allowUserChats: true,
+  /// );
+  /// // Send prepared.id to your Mini App frontend for it to call
+  /// // Telegram.WebApp.shareMessage(prepared.id).
+  /// ```
   Future<PreparedInlineMessage> savePreparedInlineMessage({
     required int userId,
     required InlineQueryResult result,
@@ -2358,6 +2826,28 @@ TOKEN=
   /// Sends an invoice for a payment (physical goods, digital goods, or
   /// Telegram Stars). Use [providerToken] for a payment provider, or leave it
   /// empty when charging in Telegram Stars (`currency: 'XTR'`).
+  ///
+  /// ```dart
+  /// // Telegram Stars — no providerToken, prices are in whole Stars.
+  /// await bot.sendInvoice(
+  ///   chatId: chatId,
+  ///   title: 'Coffee',
+  ///   description: 'One large coffee.',
+  ///   payload: 'order_coffee_large', // your own tracking id, not shown to the user
+  ///   currency: 'XTR',
+  ///   prices: [
+  ///     {'label': 'Large coffee', 'amount': 50},
+  ///   ],
+  /// );
+  /// ```
+  ///
+  /// [prices] is a list of raw `LabeledPrice` JSON objects (each
+  /// `{'label': ..., 'amount': ...}`), in the currency's smallest unit
+  /// (e.g. cents for USD) — except for `'XTR'` (Telegram Stars), where
+  /// `amount` is the whole Star count directly. After the invoice is sent,
+  /// the flow continues at [ShippingQuery] (if [isFlexible]),
+  /// [PreCheckoutQuery], and finally `Message.successfulPayment`
+  /// ([SuccessfulPayment]) once paid.
   Future<Message> sendInvoice({
     required Object chatId,
     required String title,
@@ -2432,7 +2922,21 @@ TOKEN=
         ),
       );
 
-  /// Creates a standalone payment link for an invoice, without sending it to a chat.
+  /// Creates a standalone payment link for an invoice, without sending it
+  /// to a chat — share the returned URL anywhere (a button, a website,
+  /// another chat) instead of via [sendInvoice].
+  ///
+  /// ```dart
+  /// final link = await bot.createInvoiceLink(
+  ///   title: 'Pro subscription',
+  ///   description: 'Monthly access to premium features.',
+  ///   payload: 'sub_pro_monthly',
+  ///   currency: 'XTR',
+  ///   prices: [{'label': 'Pro (monthly)', 'amount': 500}],
+  ///   subscriptionPeriod: 2592000, // 30 days — Stars-only, recurring billing
+  /// );
+  /// await bot.sendMessage(chatId: chatId, text: 'Subscribe here: $link');
+  /// ```
   Future<String> createInvoiceLink({
     required String title,
     required String description,
@@ -2522,6 +3026,13 @@ TOKEN=
       );
 
   /// Lists the bot's incoming and outgoing Telegram Stars transactions.
+  ///
+  /// ```dart
+  /// final page = await bot.getStarTransactions(limit: 20);
+  /// for (final tx in page.transactions) {
+  ///   print('${tx.amount} Stars — ${tx.source != null ? "received" : "spent"}');
+  /// }
+  /// ```
   Future<StarTransactions> getStarTransactions({
     int? offset,
     int? limit,
@@ -2536,6 +3047,18 @@ TOKEN=
       );
 
   /// Refunds a successful payment that was made in Telegram Stars.
+  /// [telegramPaymentChargeId] comes from the original
+  /// `Message.successfulPayment` (see [SuccessfulPayment]).
+  ///
+  /// ```dart
+  /// final payment = update.message?.successfulPayment;
+  /// if (payment != null) {
+  ///   await bot.refundStarPayment(
+  ///     userId: update.from!.id,
+  ///     telegramPaymentChargeId: payment.telegramPaymentChargeId,
+  ///   );
+  /// }
+  /// ```
   Future<bool> refundStarPayment({
     required int userId,
     required String telegramPaymentChargeId,
@@ -2547,7 +3070,17 @@ TOKEN=
         }),
       );
 
-  /// Cancels or reactivates a user's recurring Telegram Stars subscription payment.
+  /// Cancels or reactivates a user's recurring Telegram Stars subscription
+  /// payment (from an invoice created with `subscriptionPeriod`, e.g. via
+  /// [createInvoiceLink]).
+  ///
+  /// ```dart
+  /// await bot.editUserStarSubscription(
+  ///   userId: userId,
+  ///   telegramPaymentChargeId: payment.telegramPaymentChargeId,
+  ///   isCanceled: true,
+  /// );
+  /// ```
   Future<bool> editUserStarSubscription({
     required int userId,
     required String telegramPaymentChargeId,
@@ -2562,6 +3095,21 @@ TOKEN=
       );
 
   /// Sends a Telegram Game (an HTML5 game registered with @BotFather).
+  ///
+  /// ```dart
+  /// final sent = await bot.sendGame(chatId: chatId, gameShortName: 'my_game');
+  /// // Later, once the round finishes (chatId/messageId locate the sent
+  /// // game message; use inlineMessageId instead for an inline result):
+  /// await bot.setGameScore(
+  ///   userId: userId,
+  ///   score: 4200,
+  ///   chatId: chatId,
+  ///   messageId: sent.messageId,
+  /// );
+  /// ```
+  ///
+  /// [gameShortName] must already be registered with @BotFather via
+  /// `/newgame` — ptgb has no method for that registration step itself.
   Future<Message> sendGame({
     required int chatId,
     required String gameShortName,
@@ -2595,7 +3143,10 @@ TOKEN=
         ),
       );
 
-  /// Updates a user's score in a previously sent game message.
+  /// Updates a user's score in a previously sent game message. See
+  /// [sendGame] for the full send-then-score flow. By default Telegram
+  /// rejects a score that's lower than the user's current one — pass
+  /// [force] to allow it anyway (e.g. to correct a mistaken score).
   ///
   /// Returns the edited [Message], or `true` when editing an inline
   /// message identified only by [inlineMessageId].
@@ -2622,6 +3173,17 @@ TOKEN=
       );
 
   /// Fetches the high score table for a game message.
+  ///
+  /// ```dart
+  /// final scores = await bot.getGameHighScores(
+  ///   userId: userId, // Telegram returns this player plus their close neighbors
+  ///   chatId: chatId,
+  ///   messageId: sent.messageId,
+  /// );
+  /// for (final s in scores) {
+  ///   print('#${s.position} ${s.user.fullName}: ${s.score}');
+  /// }
+  /// ```
   Future<List<GameHighScore>> getGameHighScores({
     required int userId,
     int? chatId,
@@ -2638,6 +3200,16 @@ TOKEN=
       ).map(GameHighScore.new).toList();
 
   /// Sends a sticker from a `file_id`, URL, or local upload.
+  ///
+  /// ```dart
+  /// await bot.sendSticker(
+  ///   chatId: chatId,
+  ///   sticker: InputFile.path(path: 'assets/wave.webp'),
+  /// );
+  /// ```
+  ///
+  /// See [Sticker] for reading an incoming sticker message, and
+  /// [InputSticker]/[createNewStickerSet] for publishing your own sticker set.
   Future<Message> sendSticker({
     required Object chatId,
     required InputFile sticker,
@@ -2682,7 +3254,15 @@ TOKEN=
   }) async =>
       StickerSet(_o(await call('getStickerSet', {'name': name})));
 
-  /// Resolves a list of custom emoji IDs into full sticker information.
+  /// Resolves a list of custom emoji IDs into full sticker information —
+  /// e.g. to render a `custom_emoji`
+  /// `MessageEntity`'s referenced sticker.
+  ///
+  /// ```dart
+  /// final stickers = await bot.getCustomEmojiStickers(
+  ///   customEmojiIds: ['5368324170671202286'],
+  /// );
+  /// ```
   Future<List<Sticker>> getCustomEmojiStickers({
     required List<String> customEmojiIds,
   }) async =>
@@ -2695,6 +3275,20 @@ TOKEN=
 
   /// Uploads a file to be later reused as a sticker in [createNewStickerSet]
   /// or [addStickerToSet], returning a reusable `file_id`.
+  ///
+  /// ```dart
+  /// final uploaded = await bot.uploadStickerFile(
+  ///   userId: userId,
+  ///   sticker: InputFile.path(path: 'assets/sticker.png'),
+  ///   stickerFormat: StickerFormat.static,
+  /// );
+  /// // Reuse it without re-uploading, e.g. across several sticker sets:
+  /// final input = InputSticker(
+  ///   sticker: InputFile.id(fileId: uploaded.fileId),
+  ///   format: StickerFormat.static,
+  ///   emojiList: ['😀'],
+  /// );
+  /// ```
   Future<TelegramFile> uploadStickerFile({
     required int userId,
     required InputFile sticker,
@@ -2749,7 +3343,21 @@ TOKEN=
     );
   }
 
-  /// Adds one more sticker to an existing set created by the bot.
+  /// Adds one more sticker to an existing set created by the bot. See
+  /// [InputSticker] for building [sticker], and [createNewStickerSet] for
+  /// creating the set in the first place.
+  ///
+  /// ```dart
+  /// await bot.addStickerToSet(
+  ///   userId: userId,
+  ///   name: 'my_pack_by_yourbot',
+  ///   sticker: InputSticker(
+  ///     sticker: InputFile.path(path: 'assets/new_sticker.png'),
+  ///     format: StickerFormat.static,
+  ///     emojiList: ['🎉'],
+  ///   ),
+  /// );
+  /// ```
   Future<bool> addStickerToSet({
     required int userId,
     required String name,
@@ -2772,7 +3380,13 @@ TOKEN=
     );
   }
 
-  /// Moves a sticker to a new zero-based [position] within its set.
+  /// Moves a sticker to a new zero-based [position] within its set. Note
+  /// [sticker] here is a `file_id` string (a single sticker already in a
+  /// set) — not an [InputSticker] like [addStickerToSet] takes.
+  ///
+  /// ```dart
+  /// await bot.setStickerPositionInSet(sticker: existingFileId, position: 0);
+  /// ```
   Future<bool> setStickerPositionInSet({
     required String sticker,
     required int position,
@@ -2784,13 +3398,17 @@ TOKEN=
         ),
       );
 
-  /// Removes a sticker from its set.
+  /// Removes a sticker from its set. [sticker] is a `file_id` string, the
+  /// same as [setStickerPositionInSet].
   Future<bool> deleteStickerFromSet({
     required String sticker,
   }) async =>
       _b(await call('deleteStickerFromSet', {'sticker': sticker}));
 
-  /// Replaces an existing sticker in a set with a new one, preserving its position.
+  /// Replaces an existing sticker in a set with a new one, preserving its
+  /// position — equivalent to a [deleteStickerFromSet] +
+  /// [addStickerToSet] at the same spot, but atomic. [oldSticker] is a
+  /// `file_id` string; [sticker] is the new [InputSticker].
   Future<bool> replaceStickerInSet({
     required int userId,
     required String name,
@@ -2819,7 +3437,12 @@ TOKEN=
     );
   }
 
-  /// Changes the emoji associated with a sticker.
+  /// Changes the emoji associated with a sticker (`sticker` is a
+  /// `file_id`, as in [setStickerPositionInSet]).
+  ///
+  /// ```dart
+  /// await bot.setStickerEmojiList(sticker: fileId, emojiList: ['😂', '🤣']);
+  /// ```
   Future<bool> setStickerEmojiList({
     required String sticker,
     required List<String> emojiList,
@@ -2831,7 +3454,8 @@ TOKEN=
         ),
       );
 
-  /// Changes the search keywords associated with a sticker.
+  /// Changes the search keywords associated with a sticker (regular
+  /// stickers only, max 20 keywords). `sticker` is a `file_id`.
   Future<bool> setStickerKeywords({
     required String sticker,
     List<String>? keywords,
@@ -2843,7 +3467,10 @@ TOKEN=
         }),
       );
 
-  /// Changes where a mask sticker is anchored on a face.
+  /// Changes where a mask sticker (see [StickerType.mask]) is anchored on
+  /// a face. `sticker` is a `file_id`; [maskPosition] is raw JSON built
+  /// from a [MaskPositionPoint] plus x/y offset and scale, e.g.
+  /// `{'point': MaskPositionPoint.forehead.value, 'x_shift': 0, 'y_shift': 0, 'scale': 1}`.
   Future<bool> setStickerMaskPosition({
     required String sticker,
     Json? maskPosition,
@@ -2856,6 +3483,10 @@ TOKEN=
       );
 
   /// Renames a sticker set.
+  ///
+  /// ```dart
+  /// await bot.setStickerSetTitle(name: 'my_pack_by_yourbot', title: 'My Cool Pack');
+  /// ```
   Future<bool> setStickerSetTitle({
     required String name,
     required String title,
@@ -2863,6 +3494,16 @@ TOKEN=
       _b(await call('setStickerSetTitle', {'name': name, 'title': title}));
 
   /// Sets the thumbnail shown for a sticker set in the sticker picker.
+  /// Omit [thumbnail] to fall back to the set's first sticker as the thumbnail.
+  ///
+  /// ```dart
+  /// await bot.setStickerSetThumbnail(
+  ///   name: 'my_pack_by_yourbot',
+  ///   userId: userId,
+  ///   format: StickerFormat.static,
+  ///   thumbnail: InputFile.path(path: 'assets/thumb.png'),
+  /// );
+  /// ```
   Future<bool> setStickerSetThumbnail({
     required String name,
     required int userId,
@@ -2877,7 +3518,10 @@ TOKEN=
         ),
       );
 
-  /// Sets the thumbnail of a custom emoji sticker set from one of its own stickers.
+  /// Sets the thumbnail of a custom emoji sticker set from one of its own
+  /// stickers — unlike [setStickerSetThumbnail] (used for regular/mask
+  /// sets), this doesn't take a fresh upload; pass a `custom_emoji_id`
+  /// already in the set, or omit it to clear the thumbnail.
   Future<bool> setCustomEmojiStickerSetThumbnail({
     required String name,
     String? customEmojiId,
@@ -2889,13 +3533,20 @@ TOKEN=
         }),
       );
 
-  /// Deletes an entire sticker set owned by the bot.
+  /// Deletes an entire sticker set owned by the bot. Irreversible — unlike
+  /// [deleteStickerFromSet] (removes one sticker), this removes the whole
+  /// set.
   Future<bool> deleteStickerSet({
     required String name,
   }) async =>
       _b(await call('deleteStickerSet', {'name': name}));
 
   /// Lists the boosts a user has applied to a chat.
+  ///
+  /// ```dart
+  /// final boosts = await bot.getUserChatBoosts(chatId: chatId, userId: userId);
+  /// print('${boosts.boosts.length} active boost(s)');
+  /// ```
   Future<UserChatBoosts> getUserChatBoosts({
     required Object chatId,
     required int userId,
@@ -2954,12 +3605,25 @@ TOKEN=
   }) async =>
       _b(await call('removeChatVerification', {'chat_id': chatId}));
 
-  /// Returns the bot's current balance of Telegram Stars as a `StarAmount` object (raw JSON).
+  /// Returns the bot's current balance of Telegram Stars.
+  ///
+  /// ```dart
+  /// final balance = await bot.getMyStarBalance();
+  /// print('${balance.amount} Stars');
+  /// ```
   Future<StarAmount> getMyStarBalance() async =>
       StarAmount(_o(await call('getMyStarBalance')));
 
   /// Sets the bot's profile photo. [photo] can be a static image
   /// ([InputProfilePhotoStatic]) or a short animation ([InputProfilePhotoAnimated]).
+  ///
+  /// ```dart
+  /// await bot.setMyProfilePhoto(
+  ///   photo: InputProfilePhotoStatic(
+  ///     photo: InputFile.path(path: 'assets/bot_avatar.jpg'),
+  ///   ),
+  /// );
+  /// ```
   Future<bool> setMyProfilePhoto({
     required InputProfilePhoto photo,
   }) async {
@@ -2972,7 +3636,7 @@ TOKEN=
   Future<bool> removeMyProfilePhoto() async =>
       _b(await call('removeMyProfilePhoto'));
 
-  /// Returns the audio files a user has added to their profile, as a `UserProfileAudios` object (raw JSON).
+  /// Returns the audio files a user has added to their profile.
   Future<UserProfileAudios> getUserProfileAudios({
     required int userId,
     int? offset,
@@ -3005,9 +3669,18 @@ TOKEN=
       _s(await call('replaceManagedBotToken', {'bot_id': botId}));
 
   /// Stores a keyboard [button] (e.g. a users/chat/managed-bot request
-  /// button — see [KeyboardButton]) for reuse from a Mini App via
-  /// `sendPreparedMessage`. The `allow*Chats` flags mirror
-  /// [Bot.savePreparedInlineMessage]'s.
+  /// button — see [KeyboardButton]) for reuse from a Mini App, the
+  /// keyboard-button counterpart to [savePreparedInlineMessage]. The
+  /// returned [PreparedInlineMessage.id] and the `allow*Chats` flags work
+  /// the same way as there.
+  ///
+  /// ```dart
+  /// final prepared = await bot.savePreparedKeyboardButton(
+  ///   userId: userId,
+  ///   button: KeyboardButton(text: 'Share your username'),
+  ///   allowUserChats: true,
+  /// );
+  /// ```
   Future<PreparedInlineMessage> savePreparedKeyboardButton({
     required int userId,
     required KeyboardButton button,
@@ -3030,7 +3703,13 @@ TOKEN=
         ),
       );
 
-  /// Removes one user's reaction from a message in a chat the bot administers.
+  /// Removes one user's reaction from a message in a chat the bot
+  /// administers. To set/change the *bot's own* reaction instead, use
+  /// [setMessageReaction] (see [ReactionType]).
+  ///
+  /// ```dart
+  /// await bot.deleteMessageReaction(chatId: chatId, messageId: messageId, userId: userId);
+  /// ```
   Future<bool> deleteMessageReaction({
     required Object chatId,
     required int messageId,
@@ -3058,6 +3737,12 @@ TOKEN=
 
   /// Approves a suggested post in a channel direct-messages chat. If
   /// [sendDate] is omitted, the post is published immediately.
+  ///
+  /// ```dart
+  /// await bot.approveSuggestedPost(chatId: dmChatId, messageId: suggestion.messageId);
+  /// ```
+  ///
+  /// See [declineSuggestedPost] for the rejection path.
   Future<bool> approveSuggestedPost({
     required int chatId,
     required int messageId,
@@ -3072,7 +3757,7 @@ TOKEN=
       );
 
   /// Declines a suggested post in a channel direct-messages chat, optionally
-  /// explaining why via [comment].
+  /// explaining why via [comment]. See [approveSuggestedPost].
   Future<bool> declineSuggestedPost({
     required int chatId,
     required int messageId,
@@ -3086,7 +3771,8 @@ TOKEN=
         }),
       );
 
-  /// Sends a checklist on behalf of a connected business account.
+  /// Sends a checklist on behalf of a connected business account. See
+  /// [InputChecklist] for a full build-and-send example.
   Future<Message> sendChecklist({
     required String businessConnectionId,
     required int chatId,
@@ -3114,7 +3800,26 @@ TOKEN=
         ),
       );
 
-  /// Edits a checklist previously sent on behalf of a connected business account.
+  /// Edits a checklist previously sent on behalf of a connected business
+  /// account — e.g. to add, remove, or reword tasks. Send the *entire*
+  /// updated [InputChecklist] (not just the changed tasks); this replaces
+  /// the whole checklist. (Marking individual tasks done/not-done is done
+  /// by users directly in the chat, not through this method.)
+  ///
+  /// ```dart
+  /// await bot.editMessageChecklist(
+  ///   businessConnectionId: connectionId,
+  ///   chatId: chatId,
+  ///   messageId: sent.messageId,
+  ///   checklist: InputChecklist(
+  ///     title: 'Trip packing list',
+  ///     tasks: [
+  ///       InputChecklistTask(id: 1, text: 'Passport'),
+  ///       InputChecklistTask(id: 2, text: 'Charger'),
+  ///     ], // task id 3 ("Sunscreen") dropped — no longer on the list
+  ///   ),
+  /// );
+  /// ```
   Future<Message> editMessageChecklist({
     required String businessConnectionId,
     required int chatId,
@@ -3141,6 +3846,15 @@ TOKEN=
   /// callback query the guest triggered), the message is sent as an
   /// *ephemeral* message visible only to that user — see
   /// [editEphemeralMessageText] and friends for editing it afterwards.
+  ///
+  /// ```dart
+  /// await bot.sendLivePhoto(
+  ///   chatId: chatId,
+  ///   photo: InputFile.path(path: 'assets/cover.jpg'),
+  ///   video: InputFile.path(path: 'assets/motion.mp4'),
+  ///   caption: 'Tap to see it move!',
+  /// );
+  /// ```
   Future<Message> sendLivePhoto({
     required Object chatId,
     required InputFile photo,
@@ -3200,7 +3914,19 @@ TOKEN=
       );
 
   /// Answers a query sent by a guest (an unauthenticated user browsing via
-  /// Guest Mode), delivering [result] back to them.
+  /// Guest Mode), delivering [result] back to them — the guest-mode
+  /// counterpart to [answerWebAppQuery].
+  ///
+  /// ```dart
+  /// await bot.answerGuestQuery(
+  ///   guestQueryId: guestQueryId,
+  ///   result: InlineQueryResultArticle(
+  ///     id: '1',
+  ///     title: 'Welcome!',
+  ///     inputMessageContent: InputTextMessageContent(messageText: 'Hi there!'),
+  ///   ),
+  /// );
+  /// ```
   Future<SentWebAppMessage> answerGuestQuery({
     required String guestQueryId,
     required InlineQueryResult result,
@@ -3221,6 +3947,17 @@ TOKEN=
   /// [Json] is used given how many block types that structure can contain —
   /// see https://core.telegram.org/bots/api#inputrichmessage for the shape,
   /// or fall back to [call] directly if this typed wrapper doesn't fit.
+  ///
+  /// ```dart
+  /// await bot.sendRichMessage(
+  ///   chatId: chatId,
+  ///   richMessage: {
+  ///     'blocks': [
+  ///       {'type': 'text', 'text': 'Here'},
+  ///     ],
+  ///   },
+  /// );
+  /// ```
   Future<Message> sendRichMessage({
     required Object chatId,
     required Json richMessage,
@@ -3282,6 +4019,13 @@ TOKEN=
   /// resolving the request per [result]: `'approve'` to let the user join,
   /// `'decline'` to reject them, or `'queue'` to leave the decision to
   /// other administrators.
+  ///
+  /// ```dart
+  /// await bot.answerChatJoinRequestQuery(
+  ///   chatJoinRequestQueryId: queryId,
+  ///   result: 'approve',
+  /// );
+  /// ```
   Future<bool> answerChatJoinRequestQuery({
     required String chatJoinRequestQueryId,
     required String result,
@@ -3298,6 +4042,13 @@ TOKEN=
   /// approving them via [answerChatJoinRequestQuery]. [webApp] should be
   /// shaped like `WebAppInfo` (a `url` field); raw [Json] is used for
   /// consistency with [answerWebAppQuery].
+  ///
+  /// ```dart
+  /// await bot.sendChatJoinRequestWebApp(
+  ///   chatJoinRequestQueryId: queryId,
+  ///   webApp: {'url': 'https://example.com/verify'},
+  /// );
+  /// ```
   Future<SentWebAppMessage> sendChatJoinRequestWebApp({
     required String chatJoinRequestQueryId,
     required Json webApp,
@@ -3315,8 +4066,22 @@ TOKEN=
   /// [receiverUserId], as sent with a `receiver_user_id` argument to methods
   /// like [sendLivePhoto]) previously sent in [chatId].
   ///
+  /// ```dart
+  /// await bot.editEphemeralMessageText(
+  ///   chatId: chatId,
+  ///   receiverUserId: guestUserId,
+  ///   ephemeralMessageId: ephemeralId,
+  ///   text: 'Updated, just for you!',
+  /// );
+  /// ```
+  ///
   /// Returns the edited [Message], or `true` when Telegram doesn't send a
-  /// full message object back.
+  /// full message object back. The sibling methods
+  /// [editEphemeralMessageMedia], [editEphemeralMessageCaption], and
+  /// [editEphemeralMessageReplyMarkup] follow the same
+  /// [chatId]/[receiverUserId]/[ephemeralMessageId] pattern for editing
+  /// other parts of the message; [deleteEphemeralMessage] removes it
+  /// entirely.
   Future<Object> editEphemeralMessageText({
     required Object chatId,
     required int receiverUserId,
@@ -3448,7 +4213,19 @@ TOKEN=
         }),
       );
 
-  /// Changes a user's emoji status on the bot's behalf (requires prior user consent via a Mini App).
+  /// Changes a user's emoji status on the bot's behalf (requires prior
+  /// user consent via a Mini App). Omit [emojiStatusCustomEmojiId] to clear
+  /// the status entirely.
+  ///
+  /// ```dart
+  /// await bot.setUserEmojiStatus(
+  ///   businessConnectionId: connectionId,
+  ///   userId: userId,
+  ///   emojiStatusCustomEmojiId: '5368324170671202286',
+  ///   emojiStatusExpirationDate:
+  ///       DateTime.now().add(const Duration(days: 1)).millisecondsSinceEpoch ~/ 1000,
+  /// );
+  /// ```
   Future<bool> setUserEmojiStatus({
     required String businessConnectionId,
     required int userId,
@@ -3466,7 +4243,23 @@ TOKEN=
         }),
       );
 
-  /// Fetches details about a Telegram Business connection by its ID.
+  /// Fetches details about a Telegram Business connection by its ID —
+  /// [businessConnectionId] comes from `Update.businessConnection` once a
+  /// user connects the bot to their Business account in Telegram settings.
+  ///
+  /// ```dart
+  /// final conn = await bot.getBusinessConnection(businessConnectionId: id);
+  /// print('Connected as ${conn.user.fullName} (chat ${conn.userChatId})');
+  ///
+  /// // Every setBusinessAccount* method below acts on behalf of that
+  /// // connected account:
+  /// await bot.setBusinessAccountName(businessConnectionId: id, firstName: 'Ava');
+  /// await bot.setBusinessAccountBio(businessConnectionId: id, bio: 'Here to help!');
+  /// await bot.setBusinessAccountProfilePhoto(
+  ///   businessConnectionId: id,
+  ///   photo: InputProfilePhotoStatic(photo: InputFile.path(path: 'avatar.jpg')),
+  /// );
+  /// ```
   Future<BusinessConnection> getBusinessConnection({
     required String businessConnectionId,
   }) async =>
@@ -3479,7 +4272,8 @@ TOKEN=
         ),
       );
 
-  /// Changes the first/last name on a connected business account.
+  /// Changes the first/last name on a connected business account. See
+  /// [getBusinessConnection] for the shared example.
   Future<bool> setBusinessAccountName({
     required String businessConnectionId,
     required String firstName,
@@ -3493,7 +4287,8 @@ TOKEN=
         }),
       );
 
-  /// Changes the username on a connected business account.
+  /// Changes the username on a connected business account. See
+  /// [getBusinessConnection] for the shared example.
   Future<bool> setBusinessAccountUsername({
     required String businessConnectionId,
     String? username,
@@ -3505,7 +4300,8 @@ TOKEN=
         }),
       );
 
-  /// Changes the bio on a connected business account.
+  /// Changes the bio on a connected business account. See
+  /// [getBusinessConnection] for the shared example.
   Future<bool> setBusinessAccountBio({
     required String businessConnectionId,
     String? bio,
@@ -3517,7 +4313,9 @@ TOKEN=
         }),
       );
 
-  /// Sets the profile photo of a connected business account.
+  /// Sets the profile photo of a connected business account. See
+  /// [getBusinessConnection] for the shared example, and
+  /// [InputProfilePhoto] for building [photo].
   Future<bool> setBusinessAccountProfilePhoto({
     required String businessConnectionId,
     required InputProfilePhoto photo,
@@ -3538,7 +4336,8 @@ TOKEN=
     );
   }
 
-  /// Removes the profile photo of a connected business account.
+  /// Removes the profile photo of a connected business account. See
+  /// [setBusinessAccountProfilePhoto].
   Future<bool> removeBusinessAccountProfilePhoto({
     required String businessConnectionId,
     bool? isPublic,
@@ -3577,7 +4376,9 @@ TOKEN=
         ),
       );
 
-  /// Transfers Telegram Stars out of a connected business account.
+  /// Transfers Telegram Stars out of a connected business account to the
+  /// bot's own balance. See [getBusinessAccountStarBalance] for checking
+  /// the amount available first.
   Future<bool> transferBusinessAccountStars({
     required String businessConnectionId,
     required int starCount,
@@ -3589,7 +4390,20 @@ TOKEN=
         }),
       );
 
-  /// Lists gifts owned by a connected business account.
+  /// Lists gifts owned by a connected business account, with a long list
+  /// of `exclude*` filters to narrow the result. [getUserGifts]/
+  /// [getChatGifts] share the same shape for a user's or channel's
+  /// *publicly displayed* gifts instead (no `businessConnectionId` needed,
+  /// since those don't require the account to be connected to this bot).
+  ///
+  /// ```dart
+  /// final page = await bot.getBusinessAccountGifts(
+  ///   businessConnectionId: connectionId,
+  ///   excludeSaved: true, // only gifts not currently displayed on the profile
+  ///   limit: 20,
+  /// );
+  /// print('${page.totalCount} total, ${page.gifts.length} in this page');
+  /// ```
   Future<OwnedGifts> getBusinessAccountGifts({
     required String businessConnectionId,
     bool? excludeUnsaved,
@@ -3621,7 +4435,8 @@ TOKEN=
         ),
       );
 
-  /// Lists gifts publicly displayed on a user's profile.
+  /// Lists gifts publicly displayed on a user's profile. See
+  /// [getBusinessAccountGifts] for the shared example and filter shape.
   Future<OwnedGifts> getUserGifts({
     required int userId,
     bool? excludeUnlimited,
@@ -3652,7 +4467,8 @@ TOKEN=
         ),
       );
 
-  /// Lists gifts publicly displayed on a channel chat's profile.
+  /// Lists gifts publicly displayed on a channel chat's profile. See
+  /// [getBusinessAccountGifts] for the shared example and filter shape.
   Future<OwnedGifts> getChatGifts({
     required Object chatId,
     bool? excludeUnlimited,
@@ -3683,7 +4499,18 @@ TOKEN=
         ),
       );
 
-  /// Converts a regular gift owned by a business account into Telegram Stars.
+  /// Converts a regular gift owned by a business account into Telegram
+  /// Stars. [ownedGiftId] comes from [OwnedGift.ownedGiftId] (via
+  /// [getBusinessAccountGifts]).
+  ///
+  /// ```dart
+  /// final gifts = await bot.getBusinessAccountGifts(businessConnectionId: id);
+  /// final regular = gifts.gifts.firstWhere((g) => g.type == 'regular');
+  /// await bot.convertGiftToStars(
+  ///   businessConnectionId: id,
+  ///   ownedGiftId: regular.ownedGiftId!,
+  /// );
+  /// ```
   Future<bool> convertGiftToStars({
     required String businessConnectionId,
     required String ownedGiftId,
@@ -3695,7 +4522,8 @@ TOKEN=
         }),
       );
 
-  /// Upgrades a regular gift owned by a business account into a unique gift.
+  /// Upgrades a regular gift owned by a business account into a unique
+  /// gift (irreversible). See [convertGiftToStars] for finding [ownedGiftId].
   Future<bool> upgradeGift({
     required String businessConnectionId,
     required String ownedGiftId,
@@ -3712,7 +4540,9 @@ TOKEN=
         }),
       );
 
-  /// Transfers a unique gift owned by a business account to another owner.
+  /// Transfers a unique gift owned by a business account to another owner
+  /// ([newOwnerChatId]). Unique gifts only — see [upgradeGift] to convert
+  /// a regular gift into a transferable unique one first.
   Future<bool> transferGift({
     required String businessConnectionId,
     required String ownedGiftId,
@@ -3729,6 +4559,14 @@ TOKEN=
       );
 
   /// Marks a message in a connected business account's chat as read.
+  ///
+  /// ```dart
+  /// await bot.readBusinessMessage(
+  ///   businessConnectionId: connectionId,
+  ///   chatId: chatId,
+  ///   messageId: message.messageId,
+  /// );
+  /// ```
   Future<bool> readBusinessMessage({
     required String businessConnectionId,
     required int chatId,
@@ -3742,7 +4580,8 @@ TOKEN=
         }),
       );
 
-  /// Deletes messages on behalf of a connected business account.
+  /// Deletes messages on behalf of a connected business account — the
+  /// business-account counterpart to [deleteMessages].
   Future<bool> deleteBusinessMessages({
     required String businessConnectionId,
     required List<int> messageIds,
@@ -3755,6 +4594,8 @@ TOKEN=
       );
 
   /// Posts a new Telegram Story on behalf of a connected business account.
+  /// See [InputStoryContent] for a usage example, and [editStory]/
+  /// [deleteStory] for managing it afterwards via the returned [Story.id].
   Future<Story> postStory({
     required String businessConnectionId,
     required InputStoryContent content,
@@ -3789,7 +4630,17 @@ TOKEN=
     );
   }
 
-  /// Edits a previously posted Telegram Story.
+  /// Edits a previously posted Telegram Story. [storyId] is [Story.id]
+  /// from [postStory]'s return value.
+  ///
+  /// ```dart
+  /// await bot.editStory(
+  ///   businessConnectionId: connectionId,
+  ///   storyId: posted.id,
+  ///   content: InputStoryContentPhoto(photo: InputFile.path(path: 'updated.jpg')),
+  ///   caption: 'Updated caption!',
+  /// );
+  /// ```
   Future<Story> editStory({
     required String businessConnectionId,
     required int storyId,
@@ -3820,7 +4671,7 @@ TOKEN=
     );
   }
 
-  /// Deletes a previously posted Telegram Story.
+  /// Deletes a previously posted Telegram Story. [storyId] is [Story.id].
   Future<bool> deleteStory({
     required String businessConnectionId,
     required int storyId,
@@ -3837,6 +4688,15 @@ TOKEN=
   /// been posted (or reposted) by this bot. Requires the
   /// `can_manage_stories` business bot right on both accounts. [activePeriod]
   /// must be one of `6 * 3600`, `12 * 3600`, `86400`, or `2 * 86400` seconds.
+  ///
+  /// ```dart
+  /// await bot.repostStory(
+  ///   businessConnectionId: targetConnectionId,
+  ///   fromChatId: sourceChatId,
+  ///   fromStoryId: posted.id,
+  ///   activePeriod: 86400,
+  /// );
+  /// ```
   Future<Story> repostStory({
     required String businessConnectionId,
     required int fromChatId,
@@ -3859,10 +4719,18 @@ TOKEN=
       );
 
   /// Lists all gifts currently purchasable to send to users.
+  ///
+  /// ```dart
+  /// final catalog = await bot.getAvailableGifts();
+  /// final cheapest = catalog.gifts.reduce((a, b) => a.starCount < b.starCount ? a : b);
+  /// await bot.sendGift(giftId: cheapest.id, userId: userId);
+  /// ```
   Future<Gifts> getAvailableGifts() async =>
       Gifts(_o(await call('getAvailableGifts')));
 
-  /// Sends a gift to a user or channel, optionally paid for in Telegram Stars.
+  /// Sends a gift to a user or channel, optionally paid for in Telegram
+  /// Stars. Exactly one of [userId]/[chatId] should be set. See
+  /// [getAvailableGifts] for finding a [giftId] to send.
   Future<bool> sendGift({
     required String giftId,
     int? userId,
@@ -3884,7 +4752,17 @@ TOKEN=
         }),
       );
 
-  /// Gifts a Telegram Premium subscription to a user.
+  /// Gifts a Telegram Premium subscription to a user, paid for in
+  /// Telegram Stars.
+  ///
+  /// ```dart
+  /// await bot.giftPremiumSubscription(
+  ///   userId: userId,
+  ///   monthCount: 3,
+  ///   starCount: 1000, // must match Telegram's current price for monthCount
+  ///   text: 'Enjoy your gift!',
+  /// );
+  /// ```
   Future<bool> giftPremiumSubscription({
     required int userId,
     required int monthCount,
@@ -3904,7 +4782,27 @@ TOKEN=
         }),
       );
 
-  /// Reports validation errors on a user's Telegram Passport data, prompting them to resubmit.
+  /// Reports validation errors on a user's Telegram Passport data,
+  /// prompting them to resubmit the flagged fields. [errors] is a list of
+  /// raw `PassportElementError` JSON objects (Telegram defines several
+  /// variants — e.g. `{'source': 'data', 'type': 'personal_details',
+  /// 'field_name': 'first_name', 'data_hash': hash, 'message': 'Please
+  /// re-enter your first name'}`); use whichever variant matches the
+  /// field that failed validation.
+  ///
+  /// ```dart
+  /// await bot.setPassportDataErrors(
+  ///   userId: userId,
+  ///   errors: [
+  ///     {
+  ///       'source': 'file',
+  ///       'type': 'utility_bill',
+  ///       'file_hash': fileHash,
+  ///       'message': 'The document photo is too blurry, please retake it.',
+  ///     },
+  ///   ],
+  /// );
+  /// ```
   Future<bool> setPassportDataErrors({
     required int userId,
     required List<Json> errors,

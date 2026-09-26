@@ -5,6 +5,25 @@ import 'core.dart';
 ///
 /// Every field defaults to `null` (unchanged); set a field to `false` to
 /// revoke that permission, or `true` to grant it.
+///
+/// ```dart
+/// // Lock a group down to read-only except for @admins.
+/// await bot.setChatPermissions(
+///   chatId: chatId,
+///   permissions: ChatPermissions(canSendMessages: false),
+/// );
+///
+/// // Let members chat and send photos, but not polls or other bots' games.
+/// await bot.setChatPermissions(
+///   chatId: chatId,
+///   permissions: ChatPermissions(
+///     canSendMessages: true,
+///     canSendPhotos: true,
+///     canSendPolls: false,
+///     canSendOtherMessages: false,
+///   ),
+/// );
+/// ```
 class ChatPermissions {
   /// Whether members can send text messages, contacts, invoices, locations, and venues.
   final bool? canSendMessages;
@@ -90,12 +109,30 @@ class ChatPermissions {
       };
 }
 
-/// The specific privileges granted to a chat administrator, used with
-/// [Bot.promoteChatMember] and [Bot.setMyDefaultAdministratorRights].
+/// The specific privileges granted to a chat administrator.
+///
+/// Note that [Bot.promoteChatMember] takes these same rights as flat named
+/// parameters rather than a [ChatAdministratorRights] object — this class
+/// itself is for [Bot.setMyDefaultAdministratorRights] (the rights the bot
+/// suggests when someone adds it as an admin) and for reading rights back
+/// off a `ChatMemberAdministrator` (via [ChatAdministratorRights.fromJson]).
 ///
 /// The first eleven fields default to `false` since they represent an
 /// explicit grant of power; the last four are left `null` (meaning:
 /// unset/inherit) since they only apply to channels or forum-enabled chats.
+///
+/// ```dart
+/// // Suggest a moderator-style rights set whenever this bot is added as
+/// // an admin to a group.
+/// await bot.setMyDefaultAdministratorRights(
+///   rights: ChatAdministratorRights(
+///     canDeleteMessages: true,
+///     canRestrictMembers: true,
+///     canInviteUsers: true,
+///     canPinMessages: true,
+///   ),
+/// );
+/// ```
 class ChatAdministratorRights {
   /// Whether the admin's presence is hidden (shown as the chat itself rather than a named user).
   final bool isAnonymous;
@@ -205,22 +242,47 @@ class ChatAdministratorRights {
 }
 
 /// A reaction the bot can set on a message via [Bot.setMessageReaction].
+///
+/// ```dart
+/// // React with a standard emoji.
+/// await bot.setMessageReaction(
+///   chatId: chatId,
+///   messageId: message.messageId,
+///   reaction: [ReactionType.emoji(emoji: '👍')],
+/// );
+///
+/// // Clear this bot's reaction on that message.
+/// await bot.setMessageReaction(
+///   chatId: chatId,
+///   messageId: message.messageId,
+///   reaction: [],
+/// );
+/// ```
+///
+/// Only a fixed set of emoji are valid for [ReactionType.emoji] — Telegram
+/// rejects anything outside its supported reaction list with a
+/// [TelegramApiException]; for anything else, use
+/// [ReactionType.customEmoji] with a custom emoji sticker's identifier, or
+/// [ReactionType.paid] to react with Telegram Stars (channels only, and
+/// counts toward the channel's Star balance).
 abstract class ReactionType {
   /// Converts this reaction to the JSON shape Telegram's API expects.
   Json toJson();
 
-  /// A standard emoji reaction, e.g. `ReactionType.emoji(emoji: '👍')`.
+  /// A standard emoji reaction, e.g. `ReactionType.emoji(emoji: '👍')`. Must
+  /// be one of Telegram's supported reaction emoji, not an arbitrary emoji.
   factory ReactionType.emoji({
     required String emoji,
   }) => _EmojiReaction(emoji: emoji);
 
-  /// A reaction using a custom emoji sticker, identified by [customEmojiId].
+  /// A reaction using a custom emoji sticker, identified by [customEmojiId]
+  /// (a `CustomEmoji` sticker's `custom_emoji_id`).
   factory ReactionType.customEmoji({
     required String customEmojiId,
   }) =>
       _CustomEmojiReaction(customEmojiId: customEmojiId);
 
-  /// A paid-star reaction (Telegram Stars).
+  /// A paid-star reaction (Telegram Stars). Channels only.
   factory ReactionType.paid() => _PaidReaction();
 }
 

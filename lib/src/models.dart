@@ -16,6 +16,18 @@ List<T> _wrapList<T>(dynamic raw, T Function(Json) wrap) =>
 /// Wrapping is optional and lossless: construct one from any `User`-shaped
 /// [Json] you already have (`User(update.from!)`), and [raw] is always
 /// available underneath for any field not covered by a getter here.
+///
+/// You'll most often read a [User] off an incoming [Update] rather than
+/// construct one yourself:
+///
+/// ```dart
+/// await for (final update in bot.poll()) {
+///   final sender = update.from; // shortcut for update.message?.from, etc.
+///   if (sender != null) {
+///     print('Message from ${sender.fullName} (id ${sender.id})');
+///   }
+/// }
+/// ```
 class User {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -81,6 +93,16 @@ class User {
 /// fields like bio, permissions, and invite links on top of these), use
 /// [ChatFullInfo] instead — this wrapper only covers the smaller `Chat`
 /// shape embedded in messages and updates.
+///
+/// ```dart
+/// final chat = update.chat;
+/// if (chat != null && chat.isPrivate) {
+///   await bot.sendMessage(chatId: chat.id, text: 'Hi, ${chat.firstName}!');
+/// }
+/// // Need bio, invite links, or pinned message? Fetch the full record:
+/// final full = await bot.getChat(chatId: chat!.id);
+/// print(full.bio);
+/// ```
 class Chat {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -126,7 +148,10 @@ class Chat {
 }
 
 /// A photo's size variant, as found in [Message.photo] and various
-/// thumbnail fields throughout the API.
+/// thumbnail fields throughout the API. [Message.photo] lists every
+/// available size smallest-first, so `message.photo!.last` is the
+/// largest/original size — see [TelegramFile] for how to actually
+/// download it from [fileId].
 class PhotoSize {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -180,6 +205,7 @@ class Location {
 }
 
 /// A generic file attached to a message, as found in [Message.document].
+/// See [TelegramFile] for how to download it from [fileId].
 class Document {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -206,7 +232,8 @@ class Document {
   int? get fileSize => raw['file_size'] as int?;
 }
 
-/// A video attached to a message, as found in [Message.video].
+/// A video attached to a message, as found in [Message.video]. See
+/// [TelegramFile] for how to download it from [fileId].
 class Video {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -242,7 +269,8 @@ class Video {
   int? get fileSize => raw['file_size'] as int?;
 }
 
-/// An audio file attached to a message, as found in [Message.audio].
+/// An audio file attached to a message, as found in [Message.audio]. See
+/// [TelegramFile] for how to download it from [fileId].
 class Audio {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -279,6 +307,7 @@ class Audio {
 }
 
 /// A voice message attached to a message, as found in [Message.voice].
+/// See [TelegramFile] for how to download it from [fileId].
 class Voice {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -303,7 +332,8 @@ class Voice {
 }
 
 /// A GIF or silent, looping H.264/MPEG-4 animation, as found in
-/// [Message.animation].
+/// [Message.animation]. See [TelegramFile] for how to download it from
+/// [fileId].
 class Animation {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -339,7 +369,8 @@ class Animation {
   int? get fileSize => raw['file_size'] as int?;
 }
 
-/// A round "video message" bubble, as found in [Message.videoNote].
+/// A round "video message" bubble, as found in [Message.videoNote]. See
+/// [TelegramFile] for how to download it from [fileId].
 class VideoNote {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -441,6 +472,21 @@ class PollOption {
 
 /// A native poll or quiz, as found in [Message.poll], `Update.poll`, and
 /// returned by `Bot.stopPoll`.
+///
+/// ```dart
+/// final poll = message.poll;
+/// if (poll != null) {
+///   for (final option in poll.options) {
+///     print('${option.text}: ${option.voterCount} votes');
+///   }
+/// }
+///
+/// // Close voting early and read the final tally:
+/// final finalResult = await bot.stopPoll(
+///   chatId: chatId,
+///   messageId: message.messageId,
+/// );
+/// ```
 class Poll {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -491,6 +537,17 @@ class Poll {
 
 /// A sticker, as found in [Message.sticker] and returned within
 /// `StickerSet.stickers`.
+///
+/// ```dart
+/// final sticker = message.sticker;
+/// if (sticker?.setName != null) {
+///   final set = await bot.getStickerSet(name: sticker!.setName!);
+///   print('From "${set.title}", ${set.stickers.length} stickers total');
+/// }
+/// ```
+///
+/// A sticker's [emoji] is just a hint of its meaning (searchable, shown
+/// in pickers) — it isn't rendered as part of the sticker image itself.
 class Sticker {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -594,6 +651,19 @@ class OrderInfo {
 }
 
 /// A completed invoice payment, as found in [Message.successfulPayment].
+/// This is your cue to actually deliver whatever was paid for — by the
+/// time this arrives, the payment has already been captured.
+///
+/// ```dart
+/// final payment = update.message?.successfulPayment;
+/// if (payment != null) {
+///   await fulfillOrder(payment.invoicePayload);
+///   await bot.sendMessage(chatId: chatId, text: 'Thanks for your order!');
+/// }
+/// ```
+///
+/// See [Bot.sendInvoice] for creating the invoice in the first place, and
+/// [PreCheckoutQuery] for the last-chance validation step just before this.
 class SuccessfulPayment {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -703,6 +773,13 @@ class Game {
 
 /// Data sent to the bot by a Web App via its button's `web_app` field, as
 /// found in [Message.webAppData].
+///
+/// ```dart
+/// final webAppData = update.message?.webAppData;
+/// if (webAppData != null) {
+///   print('Mini App (${webAppData.buttonText}) sent: ${webAppData.data}');
+/// }
+/// ```
 class WebAppData {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -718,6 +795,20 @@ class WebAppData {
 }
 
 /// Just a message's identifier, returned by `Bot.copyMessage`.
+///
+/// `copyMessage` clones a message's *content* into another chat, but
+/// (unlike `forwardMessage`) hides the "Forwarded from" attribution and
+/// gives the copy its own [messageId] — that's why it returns this
+/// lightweight wrapper rather than a full [Message]:
+///
+/// ```dart
+/// final copy = await bot.copyMessage(
+///   chatId: targetChatId,
+///   fromChatId: sourceChatId,
+///   messageId: original.messageId,
+/// );
+/// print('Copied as message ${copy.messageId} in the new chat');
+/// ```
 class MessageId {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -754,7 +845,17 @@ class ForumTopic {
   String? get iconCustomEmojiId => raw['icon_custom_emoji_id'] as String?;
 }
 
-/// One of the bot's registered `/` commands, as returned by `Bot.getMyCommands`.
+/// One of the bot's registered `/` commands, as returned by
+/// `Bot.getMyCommands`. Note this is the *read* shape — `Bot.setMyCommands`
+/// takes raw JSON maps instead (`{'command': ..., 'description': ...}`),
+/// since it also accepts a scope you build yourself.
+///
+/// ```dart
+/// final commands = await bot.getMyCommands();
+/// for (final c in commands) {
+///   print('/${c.command} — ${c.description}');
+/// }
+/// ```
 class BotCommand {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -779,6 +880,32 @@ class BotCommand {
 /// polls, service messages, ...) is now typed as well — the same way you'd
 /// use [Update]'s own shortcuts. Construct one from any `Message`-shaped
 /// [Json] you already have, e.g. `Message(update.message!)`.
+///
+/// Every `send*` method on `Bot` that actually creates a message —
+/// [Bot.sendMessage], [Bot.sendPhoto], [Bot.sendPoll], and so on — returns
+/// the [Message] it just sent, so you always have [messageId] on hand for
+/// later. **This is the standard way to later edit or delete a message the
+/// bot sent**:
+///
+/// ```dart
+/// final sent = await bot.sendMessage(chatId: chatId, text: 'Processing...');
+///
+/// // ...do some work...
+///
+/// // Either update it in place:
+/// await bot.editMessageText(
+///   chatId: chatId,
+///   messageId: sent.messageId,
+///   text: 'Done!',
+/// );
+/// // ...or remove it entirely:
+/// await bot.deleteMessage(chatId: chatId, messageId: sent.messageId);
+/// ```
+///
+/// For a message a *user* sent (rather than one your bot just sent), read
+/// [messageId] the same way off `update.message`/`Message` — e.g.
+/// `update.message!.messageId` — or use the `update.messageId` shortcut on
+/// [Update] directly.
 class Message {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -953,7 +1080,7 @@ class Message {
 }
 
 /// A single entry on a game's leaderboard, as found in the list returned by
-/// `Bot.getGameHighScores`.
+/// `Bot.getGameHighScores` — see that method for a usage example.
 class GameHighScore {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -979,6 +1106,20 @@ class GameHighScore {
 /// This and the classes below it wrap the shape of a `Bot` method's
 /// *return value*, rather than an incoming update. If you're looking for
 /// `Message`, `User`, or `Chat`, they're defined earlier in this file.
+///
+/// ```dart
+/// final info = await bot.getWebhookInfo();
+/// if (info.url.isEmpty) {
+///   print('No webhook set — this bot must be using long polling (Bot.poll).');
+/// } else if (info.lastErrorMessage != null) {
+///   print('Webhook is failing: ${info.lastErrorMessage}');
+/// }
+/// ```
+///
+/// Note: [Bot.poll] (long polling) and a webhook are mutually exclusive —
+/// Telegram rejects `getUpdates` calls while a webhook URL is set. Call
+/// `Bot.deleteWebhook` first if you want to switch from a webhook back to
+/// polling.
 class WebhookInfo {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1016,7 +1157,8 @@ class WebhookInfo {
       (raw['allowed_updates'] as List?)?.cast<String>();
 }
 
-/// A page of a user's profile photos, as returned by `Bot.getUserProfilePhotos`.
+/// A page of a user's profile photos, as returned by
+/// `Bot.getUserProfilePhotos` — see that method for a usage example.
 class UserProfilePhotos {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1036,6 +1178,27 @@ class UserProfilePhotos {
 /// A file's download location, as returned by `Bot.getFile`. Named
 /// `TelegramFile` (rather than `File`) to avoid clashing with `dart:io`'s
 /// [File].
+///
+/// Every media getter on [Message] (`.photo`, `.video`, `.document`, ...)
+/// gives you a `fileId` but not the bytes themselves — Telegram is a
+/// two-step download: resolve the `fileId` into a [filePath] via
+/// [Bot.getFile], then fetch the bytes from that path via
+/// [Bot.downloadFile]. [Bot.downloadFileById] does both steps for you:
+///
+/// ```dart
+/// final photo = message.photo!.last; // largest available size
+/// final bytes = await bot.downloadFileById(fileId: photo.fileId);
+/// await File('downloaded.jpg').writeAsBytes(bytes);
+///
+/// // Equivalent, done manually (useful if you also want filePath/fileSize
+/// // without downloading, or want to build the raw HTTPS URL yourself):
+/// final file = await bot.getFile(fileId: photo.fileId);
+/// final bytes2 = await bot.downloadFile(filePath: file.filePath!);
+/// ```
+///
+/// [filePath] can be `null` for files above 20MB — the Bot API doesn't
+/// support downloading those; you'd need the (paid, self-hosted) Local
+/// Bot API Server for larger files, which `ptgb` doesn't set up for you.
 class TelegramFile {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1059,6 +1222,24 @@ class TelegramFile {
 
 /// An additional (non-primary) chat invite link, as returned by
 /// `Bot.createChatInviteLink` and friends.
+///
+/// ```dart
+/// final link = await bot.createChatInviteLink(
+///   chatId: chatId,
+///   name: 'Newsletter signup',
+///   memberLimit: 100,
+/// );
+/// await bot.sendMessage(chatId: adminId, text: 'Share this: ${link.inviteLink}');
+///
+/// // Later, once it's served its purpose:
+/// await bot.revokeChatInviteLink(chatId: chatId, inviteLink: link.inviteLink);
+/// ```
+///
+/// Every chat also has one permanent, un-revocable *primary* invite link
+/// (`ChatFullInfo.inviteLink`, via [Bot.getChat]) that this class doesn't
+/// represent — this one is for the *extra* links you create yourself,
+/// e.g. to track which link brought members in, or to gate joining
+/// behind approval with [createsJoinRequest].
 class ChatInviteLink {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1102,6 +1283,19 @@ class ChatInviteLink {
 
 /// The full details of a chat, as returned by `Bot.getChat`. Richer than
 /// the [Chat] shape embedded in messages and updates.
+///
+/// ```dart
+/// final info = await bot.getChat(chatId: chatId);
+/// print('${info.title}: ${info.description ?? "no description"}');
+/// if (info.permissions?['can_send_messages'] == false) {
+///   print('This chat is currently read-only for regular members.');
+/// }
+/// ```
+///
+/// Note: [permissions] here is raw JSON, not a typed [ChatPermissions] —
+/// that class is write-only (built by *you* for [Bot.setChatPermissions]),
+/// so reading permissions back means using the raw map's snake_case keys
+/// as shown above.
 class ChatFullInfo {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1163,6 +1357,25 @@ class ChatFullInfo {
 /// The exact set of extra fields present depends on [status] (Telegram
 /// models this as a union of several `ChatMember*` shapes) — [raw] gives
 /// you access to whichever ones apply.
+///
+/// ```dart
+/// final member = await bot.getChatMember(chatId: chatId, userId: userId);
+/// switch (member.status) {
+///   case 'creator':
+///   case 'administrator':
+///     print('${member.user.fullName} is a mod.');
+///   case 'kicked':
+///     print('${member.user.fullName} is banned.');
+///   case 'left':
+///     print('${member.user.fullName} is not in the chat.');
+///   default: // 'member' or 'restricted'
+///     print('${member.user.fullName} is a regular member.');
+/// }
+///
+/// // Admin-only fields (present when status is 'administrator'/'creator')
+/// // live on `raw`, since they're not on every status:
+/// final canPin = member.raw['can_pin_messages'] as bool?;
+/// ```
 class ChatMember {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1193,7 +1406,8 @@ class ChatMember {
   bool? get isMember => raw['is_member'] as bool?;
 }
 
-/// The bot's display name, as returned by `Bot.getMyName`.
+/// The bot's display name, as returned by `Bot.getMyName` — see
+/// `Bot.setMyName` for a usage example.
 class BotName {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1205,7 +1419,8 @@ class BotName {
   String get name => raw['name'] as String;
 }
 
-/// The bot's profile description, as returned by `Bot.getMyDescription`.
+/// The bot's profile description, as returned by `Bot.getMyDescription`
+/// — see `Bot.setMyDescription`/`Bot.setMyName` for a usage example.
 class BotDescription {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1217,7 +1432,9 @@ class BotDescription {
   String get description => raw['description'] as String;
 }
 
-/// The bot's short description, as returned by `Bot.getMyShortDescription`.
+/// The bot's short description, as returned by
+/// `Bot.getMyShortDescription` — see `Bot.setMyShortDescription`/
+/// `Bot.setMyName` for a usage example.
 class BotShortDescription {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1229,7 +1446,8 @@ class BotShortDescription {
   String get shortDescription => raw['short_description'] as String;
 }
 
-/// The menu button configured for a chat, as returned by `Bot.getChatMenuButton`.
+/// The menu button configured for a chat, as returned by
+/// `Bot.getChatMenuButton` — see `Bot.setChatMenuButton` for a usage example.
 class MenuButton {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1262,6 +1480,13 @@ class SentWebAppMessage {
 
 /// A pre-uploaded inline message result, as returned by
 /// `Bot.savePreparedInlineMessage`/`Bot.savePreparedKeyboardButton`.
+///
+/// [id] isn't consumed by another `Bot` method — it's handed to a Mini
+/// App's *frontend*, which passes it to the Telegram client's own
+/// `Telegram.WebApp.shareMessage(id)` JS API so the user can share the
+/// prepared message into a chat with one tap, without your bot needing to
+/// resend it. See `Bot.savePreparedInlineMessage` for the server side of
+/// that flow.
 class PreparedInlineMessage {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1269,7 +1494,8 @@ class PreparedInlineMessage {
   /// Wraps a raw `PreparedInlineMessage` JSON object.
   const PreparedInlineMessage(this.raw);
 
-  /// Identifier of the prepared message, usable in `sendPreparedMessage`.
+  /// Identifier of the prepared message, passed to the Mini App
+  /// frontend's `Telegram.WebApp.shareMessage` call.
   String get id => raw['id'] as String;
 
   /// Unix timestamp after which this prepared message expires.
@@ -1363,7 +1589,8 @@ class ChatBoost {
   Json get source => raw['source'] as Json;
 }
 
-/// The boosts a user has applied to a chat, as returned by `Bot.getUserChatBoosts`.
+/// The boosts a user has applied to a chat, as returned by
+/// `Bot.getUserChatBoosts` — see that method for a usage example.
 class UserChatBoosts {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1376,7 +1603,9 @@ class UserChatBoosts {
 }
 
 /// A precise Telegram Stars amount, as returned by `Bot.getMyStarBalance`
-/// and `Bot.getBusinessAccountStarBalance`.
+/// and `Bot.getBusinessAccountStarBalance` — see the former for a usage
+/// example. [amount] is the whole-Star count; [nanostarAmount] holds any
+/// fractional remainder, in units of 10^-9 of a Star.
 class StarAmount {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -1509,6 +1738,11 @@ class Story {
 
 /// The audio files a user has added to their profile, as returned by
 /// `Bot.getUserProfileAudios`.
+///
+/// ```dart
+/// final audios = await bot.getUserProfileAudios(userId: userId);
+/// print('${audios.totalCount} profile audio(s) on file');
+/// ```
 class UserProfileAudios {
   /// The raw JSON this wrapper reads from.
   final Json raw;

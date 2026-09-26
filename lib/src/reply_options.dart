@@ -3,6 +3,27 @@ import 'enums.dart';
 
 /// Controls how the automatic link preview attached to a text message
 /// behaves, passed to [Bot.sendMessage]'s `linkPreviewOptions`.
+///
+/// ```dart
+/// // Suppress the preview entirely.
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'See https://example.com for details.',
+///   linkPreviewOptions: LinkPreviewOptions.disabled(),
+/// );
+///
+/// // Preview a different URL than the one Telegram would auto-pick, and
+/// // show it above the text as a large image.
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'Check this out!',
+///   linkPreviewOptions: LinkPreviewOptions(
+///     url: 'https://example.com/announcement',
+///     preferLargeMedia: true,
+///     showAboveText: true,
+///   ),
+/// );
+/// ```
 class LinkPreviewOptions {
   /// Disables the link preview entirely.
   final bool? isDisabled;
@@ -48,6 +69,27 @@ class LinkPreviewOptions {
 /// More flexible than the plain `replyToMessageId` shortcut: it also
 /// supports replying across chats via [chatId] and quoting a specific
 /// [quote] excerpt of the original message.
+///
+/// ```dart
+/// // Simple reply — equivalent to the replyToMessageId shortcut.
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'Good point!',
+///   replyParameters: ReplyParameters(messageId: original.messageId),
+/// );
+///
+/// // Quote a specific sentence from a long message the user sent earlier,
+/// // and don't fail if it's since been deleted.
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'Re: that part specifically —',
+///   replyParameters: ReplyParameters(
+///     messageId: original.messageId,
+///     quote: 'the exact sentence to highlight',
+///     allowSendingWithoutReply: true,
+///   ),
+/// );
+/// ```
 class ReplyParameters {
   /// The ID of the message being replied to.
   final int messageId;

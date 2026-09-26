@@ -100,6 +100,24 @@ class SwitchInlineQueryChosenChat {
 /// they represent mutually exclusive button behaviors. Prefer the named
 /// factories ([InlineKeyboardButton.url], [.callback], [.webApp], [.pay])
 /// for the common cases.
+///
+/// ```dart
+/// InlineKeyboardMarkup(rows: [
+///   [
+///     InlineKeyboardButton.callback(text: '👍', data: 'vote:up'),
+///     InlineKeyboardButton.callback(text: '👎', data: 'vote:down'),
+///   ],
+///   [InlineKeyboardButton.url(text: 'Read more', url: 'https://example.com')],
+/// ]);
+/// ```
+///
+/// `callbackData` you set here comes back to you as
+/// `Update.callbackQuery.data` when tapped — see [Bot.answerCallbackQuery]
+/// for how to respond to it. There's no `InlineKeyboardButton` factory for
+/// [switchInlineQuery]/[switchInlineQueryCurrentChat]/
+/// [switchInlineQueryChosenChat]/[loginUrl]/[copyText] since they're used
+/// less often; set them directly with the general constructor, e.g.
+/// `InlineKeyboardButton(text: 'Share', switchInlineQuery: '')`.
 class InlineKeyboardButton {
   /// The label shown on the button.
   final String text;
@@ -242,6 +260,29 @@ class InlineKeyboardMarkup implements ReplyMarkup {
 
 /// Configures a poll-request [KeyboardButton] — tapping it asks the user to
 /// create and send a poll, optionally restricted to a [type].
+///
+/// ```dart
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'Tap to build a quiz for the group:',
+///   replyMarkup: ReplyKeyboardMarkup(
+///     keyboard: [
+///       [
+///         KeyboardButton(
+///           text: '📊 New quiz',
+///           requestPoll: KeyboardButtonPollType(type: PollType.quiz),
+///         ),
+///       ],
+///     ],
+///     resizeKeyboard: true,
+///     oneTimeKeyboard: true,
+///   ),
+/// );
+/// ```
+///
+/// The user's resulting poll then arrives as a normal message with
+/// `Message.poll` set — [type] only restricts what Telegram's own poll
+/// composer offers them, it doesn't change how the poll is delivered.
 class KeyboardButtonPollType {
   /// Restricts the poll to `'quiz'` or `'regular'`; leave `null` to let the
   /// user choose either.
@@ -256,6 +297,35 @@ class KeyboardButtonPollType {
 
 /// Configures a users-request [KeyboardButton] — tapping it opens a list for
 /// the user to pick one or more users to share with the bot.
+///
+/// ```dart
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'Pick a friend to invite:',
+///   replyMarkup: ReplyKeyboardMarkup(
+///     keyboard: [
+///       [
+///         KeyboardButton(
+///           text: '👤 Choose a user',
+///           requestUsers: KeyboardButtonRequestUsers(requestId: 1),
+///         ),
+///       ],
+///     ],
+///     resizeKeyboard: true,
+///   ),
+/// );
+///
+/// // The pick arrives as a service message — read it off the raw JSON,
+/// // matching `requestId` back to the button that triggered it (ptgb
+/// // doesn't wrap `users_shared`/`chat_shared` with a typed getter yet).
+/// await for (final update in bot.poll()) {
+///   final shared = update.message?.raw['users_shared'] as Map?;
+///   if (shared != null && shared['request_id'] == 1) {
+///     final userIds = (shared['user_ids'] as List).cast<int>();
+///     // ...
+///   }
+/// }
+/// ```
 class KeyboardButtonRequestUsers {
   /// Identifier for this request, reused in the `UsersShared` service
   /// message so you can tell multiple such buttons apart.
@@ -305,6 +375,17 @@ class KeyboardButtonRequestUsers {
 
 /// Configures a chat-request [KeyboardButton] — tapping it opens a list for
 /// the user to pick a chat to share with the bot.
+///
+/// ```dart
+/// KeyboardButton(
+///   text: '📢 Choose a channel',
+///   requestChat: KeyboardButtonRequestChat(requestId: 2, chatIsChannel: true),
+/// );
+/// ```
+///
+/// Like [KeyboardButtonRequestUsers], the result arrives as a
+/// `chat_shared` service message — read it off `message.raw['chat_shared']`
+/// and match its `request_id` back to the button that triggered it.
 class KeyboardButtonRequestChat {
   /// Identifier for this request, reused in the `ChatShared` service
   /// message so you can tell multiple such buttons apart.
@@ -426,7 +507,29 @@ class KeyboardButton {
 /// A custom keyboard that replaces the user's device keyboard, made of rows
 /// of [KeyboardButton]s. Unlike [InlineKeyboardMarkup], tapping a plain-text
 /// button here sends its text as a normal chat message rather than a
-/// silent callback query.
+/// silent callback query — so a plain [KeyboardButton] with just a `text`
+/// is functionally a shortcut for the user typing that text themselves;
+/// your bot handles it the same way it'd handle any other incoming text.
+///
+/// ```dart
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'Choose an option:',
+///   replyMarkup: ReplyKeyboardMarkup(
+///     keyboard: [
+///       [KeyboardButton(text: 'Option A'), KeyboardButton(text: 'Option B')],
+///       [KeyboardButton(text: '📍 Share location', requestLocation: true)],
+///     ],
+///     resizeKeyboard: true,
+///     oneTimeKeyboard: true,
+///   ),
+/// );
+/// // Later, when the user taps "Option A":
+/// //   update.text == 'Option A' — handle it exactly like typed text.
+/// ```
+///
+/// To remove the keyboard again, send any message with
+/// `replyMarkup: ReplyKeyboardRemove()`.
 class ReplyKeyboardMarkup implements ReplyMarkup {
   /// The button grid — each inner list is one row.
   final List<List<KeyboardButton>> keyboard;
@@ -471,6 +574,14 @@ class ReplyKeyboardMarkup implements ReplyMarkup {
 
 /// Removes any active custom [ReplyKeyboardMarkup], reverting the user to
 /// their device's default keyboard.
+///
+/// ```dart
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'Thanks, all done!',
+///   replyMarkup: ReplyKeyboardRemove(),
+/// );
+/// ```
 class ReplyKeyboardRemove implements ReplyMarkup {
   /// Removes the keyboard only for specific targeted users (see Telegram docs on `selective`).
   final bool selective;
@@ -488,6 +599,18 @@ class ReplyKeyboardRemove implements ReplyMarkup {
 /// Forces Telegram clients to show a "reply" UI to the user, as if they'd
 /// tapped reply on the bot's message — useful for prompting free-text input
 /// without a custom keyboard.
+///
+/// ```dart
+/// await bot.sendMessage(
+///   chatId: chatId,
+///   text: 'What should I call you?',
+///   replyMarkup: ForceReply(inputFieldPlaceholder: 'Your name...'),
+/// );
+/// // The user's reply arrives as a normal message; if you need to confirm
+/// // it's specifically a reply to *this* prompt (rather than any text),
+/// // check `update.message?.replyToMessage?.messageId` against the
+/// // prompt's `sent.messageId`.
+/// ```
 class ForceReply implements ReplyMarkup {
   /// Forces the reply UI only for specific targeted users (see Telegram docs on `selective`).
   final bool selective;

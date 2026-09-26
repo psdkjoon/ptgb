@@ -10,6 +10,20 @@ import 'models.dart';
 /// **Always check [isValid] before trusting any other field.** A `false`
 /// value means the HMAC signature didn't match, which can happen if the
 /// data was tampered with, is stale, or wasn't actually issued by Telegram.
+///
+/// A Mini App's frontend sends `initData` (via `Telegram.WebApp.initData`)
+/// to your bot's own backend, which verifies it before trusting the
+/// embedded user:
+///
+/// ```dart
+/// // On your backend, handling a request from the Mini App's frontend:
+/// final data = bot.verifyWebAppInitData(initData: request.body);
+/// if (!data.isValid) {
+///   return Response.forbidden('Invalid Telegram data');
+/// }
+/// final user = data.user!; // safe to trust now
+/// print('Mini App opened by ${user.fullName} (${user.id})');
+/// ```
 class WebAppInitData {
   /// Every raw key/value pair from the `initData` query string.
   final Json fields;

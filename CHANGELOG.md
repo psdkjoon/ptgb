@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.1.0
+
+### Changed
+- Rewrote documentation across the whole library to be explanatory rather
+  than just descriptive: every method on `Bot` and every public class now
+  documents what it does, what values are accepted, what's returned, and
+  includes a runnable `dart` usage example — not just a one-line summary
+  of the signature. Related methods, classes, and enums are now
+  cross-linked (e.g. `sendMessage` links to `Message.messageId`, which
+  links to `deleteMessage`/`editMessageText`), so you can navigate the
+  whole request/response lifecycle for a feature from any one entry point.
+- Fixed several pre-existing doc inaccuracies found while doing the above:
+  `Bot.getMe`, `Bot.getFile`, and `Bot.getMyStarBalance` all described
+  their return value as "raw JSON" when they actually return typed
+  wrappers (`User`, `TelegramFile`, `StarAmount`); `PreparedInlineMessage`
+  pointed at a nonexistent `sendPreparedMessage` `Bot` method instead of
+  explaining that its `id` is consumed by the Mini App frontend's own
+  `Telegram.WebApp.shareMessage` call.
+- No API surface changes — this release is documentation-only.
+
 ## 3.0.0
 
 ### Changed — BREAKING

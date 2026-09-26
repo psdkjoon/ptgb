@@ -3,6 +3,24 @@ import 'models.dart';
 
 /// A button press on an [InlineKeyboardButton.callback] button, as found in
 /// `Update.callbackQuery`.
+///
+/// ```dart
+/// await for (final update in bot.poll()) {
+///   final query = update.callbackQuery;
+///   if (query == null) continue;
+///
+///   // Always answer, even with nothing — otherwise the tapped button
+///   // keeps showing a loading spinner on the user's client.
+///   await bot.answerCallbackQuery(callbackQueryId: query.id);
+///
+///   if (query.data == 'vote:up') {
+///     await bot.sendMessage(chatId: query.from.id, text: 'Thanks for the vote!');
+///   }
+/// }
+/// ```
+///
+/// [Update]'s `callbackData` shortcut reads [data] for you, so
+/// `update.callbackData` is equivalent to `update.callbackQuery?.data`.
 class CallbackQuery {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -36,7 +54,8 @@ class CallbackQuery {
 }
 
 /// A user typing `@yourbot ...` in any chat's input field, as found in
-/// `Update.inlineQuery`.
+/// `Update.inlineQuery` — see [InlineQueryResult]/`Bot.answerInlineQuery`
+/// for the full receive-and-respond flow.
 class InlineQuery {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -92,7 +111,26 @@ class ChosenInlineResult {
 }
 
 /// A shipping address submitted for an invoice with flexible shipping
-/// options, as found in `Update.shippingQuery`.
+/// options, as found in `Update.shippingQuery`. Only sent for invoices
+/// created with `isFlexible: true`; skip straight to
+/// [PreCheckoutQuery] otherwise.
+///
+/// ```dart
+/// final query = update.shippingQuery;
+/// if (query != null) {
+///   final toIran = query.shippingAddress.countryCode == 'IR';
+///   await bot.answerShippingQuery(
+///     shippingQueryId: query.id,
+///     ok: !toIran,
+///     errorMessage: toIran ? "Sorry, we don't ship there yet." : null,
+///     shippingOptions: toIran ? null : [
+///       {'id': 'standard', 'title': 'Standard (3-5 days)', 'prices': [
+///         {'label': 'Shipping', 'amount': 500},
+///       ]},
+///     ],
+///   );
+/// }
+/// ```
 class ShippingQuery {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -115,7 +153,26 @@ class ShippingQuery {
 }
 
 /// The final confirmation before a payment is captured, as found in
-/// `Update.preCheckoutQuery`. Must be answered within 10 seconds.
+/// `Update.preCheckoutQuery`. **Must be answered within 10 seconds** or
+/// Telegram cancels the payment automatically — do any last-second stock
+/// or price checks quickly, and answer `ok: true` unless you have a
+/// specific reason to reject.
+///
+/// ```dart
+/// final query = update.preCheckoutQuery;
+/// if (query != null) {
+///   final stillInStock = await checkStock(query.invoicePayload);
+///   await bot.answerPreCheckoutQuery(
+///     preCheckoutQueryId: query.id,
+///     ok: stillInStock,
+///     errorMessage: stillInStock ? null : 'Sorry, just sold out!',
+///   );
+/// }
+/// ```
+///
+/// Once answered `ok: true`, the payment completes and a
+/// `Message.successfulPayment` follows shortly after in the same chat —
+/// that's your cue to actually fulfill the order.
 class PreCheckoutQuery {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -147,7 +204,26 @@ class PreCheckoutQuery {
 }
 
 /// A request to join a chat that requires admin approval, as found in
-/// `Update.chatJoinRequest`.
+/// `Update.chatJoinRequest`. Only delivered if the bot is an admin of the
+/// chat with the right to invite users.
+///
+/// ```dart
+/// final request = update.chatJoinRequest;
+/// if (request != null) {
+///   final looksLegit = request.bio?.isNotEmpty ?? false;
+///   if (looksLegit) {
+///     await bot.approveChatJoinRequest(
+///       chatId: request.chat.id,
+///       userId: request.from.id,
+///     );
+///   } else {
+///     await bot.declineChatJoinRequest(
+///       chatId: request.chat.id,
+///       userId: request.from.id,
+///     );
+///   }
+/// }
+/// ```
 class ChatJoinRequest {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -182,7 +258,21 @@ class ChatJoinRequest {
   String? get queryId => raw['query_id'] as String?;
 }
 
-/// A change in a chat member's status, as found in `Update.myChatMember`/`Update.chatMember`.
+/// A change in a chat member's status, as found in
+/// `Update.myChatMember`/`Update.chatMember`.
+///
+/// `myChatMember` fires whenever *the bot's own* status in a chat changes
+/// (added, removed, promoted, ...) and is delivered by default. `chatMember`
+/// fires for *any other* member's status change, but only if the bot
+/// explicitly requested it via `allowedUpdates` on [Bot.poll]/
+/// [Bot.getUpdates] — it's noisy in large groups, so it's opt-in.
+///
+/// ```dart
+/// final update0 = update.myChatMember;
+/// if (update0 != null && update0.newChatMember.status == 'kicked') {
+///   print('Bot was kicked from ${update0.chat.title}');
+/// }
+/// ```
 class ChatMemberUpdated {
   /// The raw JSON this wrapper reads from.
   final Json raw;
@@ -220,6 +310,18 @@ class ChatMemberUpdated {
 
 /// A user's answer to a non-anonymous poll the bot sent, as found in
 /// `Update.pollAnswer`.
+///
+/// Only delivered for polls sent with `isAnonymous: false` on
+/// `Bot.sendPoll` — Telegram has no way to report individual votes on an
+/// anonymous poll, so those only ever update the poll's aggregate counts
+/// (`Update.poll`).
+///
+/// ```dart
+/// final answer = update.pollAnswer;
+/// if (answer != null) {
+///   print('${answer.user?.fullName ?? "Someone"} picked option(s) ${answer.optionIds}');
+/// }
+/// ```
 class PollAnswer {
   /// The raw JSON this wrapper reads from.
   final Json raw;

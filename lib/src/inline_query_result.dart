@@ -12,6 +12,35 @@ import 'keyboards.dart';
 /// fetched by URL (e.g. [InlineQueryResultPhoto]), or a `...Cached...`
 /// variant that reuses a `file_id` already on Telegram's servers (e.g.
 /// [InlineQueryResultCachedPhoto]).
+///
+/// The plain (non-cached) media variants — [InlineQueryResultPhoto],
+/// [InlineQueryResultGif], [InlineQueryResultMpeg4Gif],
+/// [InlineQueryResultVideo], [InlineQueryResultAudio],
+/// [InlineQueryResultDocument] — take a public **URL** Telegram fetches
+/// fresh, plus a separate thumbnail URL for the preview shown while
+/// picking a result. The `Cached*` variants instead take a **`file_id`**
+/// you already got back from a previous upload (e.g. the `photo.fileId`
+/// off a [Bot.sendPhoto] response, or a sticker's `fileId`) — no
+/// thumbnail needed, since Telegram already has one. Prefer the cached
+/// variants whenever you're re-offering media the bot has sent before;
+/// they're faster and don't need a public URL.
+///
+/// ```dart
+/// await bot.answerInlineQuery(
+///   inlineQueryId: query.id,
+///   results: [
+///     // Fresh from a URL — Telegram fetches and caches it.
+///     InlineQueryResultPhoto(
+///       id: '1',
+///       photoUrl: 'https://example.com/cat.jpg',
+///       thumbnailUrl: 'https://example.com/cat_thumb.jpg',
+///     ),
+///     // Reusing a file_id already on Telegram's servers — no URL needed.
+///     InlineQueryResultCachedPhoto(id: '2', photoFileId: knownFileId),
+///   ],
+///   cacheTime: 300, // seconds Telegram may cache this answer for
+/// );
+/// ```
 abstract class InlineQueryResult {
   /// The result type string Telegram's API expects (e.g. `'photo'`).
   final String type;
